@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) Ken Martin, Will Schroeder, Bill Lorensen
 // SPDX-License-Identifier: BSD-3-Clause
 /**
- * @class   vtkOpenXRManager
+ * @class   vtk::detail::vtkOpenXRManager
  * @brief   Singleton class that holds a collection of utility functions
  *          and member variables to communicate with the OpenXR runtime
+ *
+ * @warning This header should not be included outside of VTK or in any VTK public header.
  *
  * vtkOpenXRManager is not a vtkObject, the singleton unique instance gets
  * allocated on the stack the first time vtkOpenXRManager::GetInstance() is
@@ -13,12 +15,14 @@
 #ifndef vtkOpenXRManager_h
 #define vtkOpenXRManager_h
 
+#include "vtkABINamespace.h"
 #include "vtkRenderingOpenXRModule.h" // needed for exports
 
 #include "vtkNew.h"
 #include "vtkOpenXR.h"
 #include "vtkOpenXRManagerConnection.h"
 #include "vtkOpenXRManagerGraphics.h"
+#include "vtkOpenXRRenderWindow.h"
 #include "vtkSmartPointer.h"
 
 #include <array>
@@ -29,9 +33,12 @@
 
 VTK_ABI_NAMESPACE_BEGIN
 class vtkOpenGLRenderWindow;
-class vtkOpenXRRenderWindow;
 class vtkOpenXRSceneObserver;
+VTK_ABI_NAMESPACE_END
 
+namespace vtk::detail
+{
+VTK_ABI_NAMESPACE_BEGIN
 class VTKRENDERINGOPENXR_EXPORT vtkOpenXRManager
 {
 public:
@@ -60,22 +67,6 @@ public:
    */
   bool XrCheckOutput(OutputLevel level, const XrResult&, const std::string& message);
   ///@}
-
-  /**
-   * Structure representing OpenXR instance version
-   */
-  struct VTKRENDERINGOPENXR_EXPORT InstanceVersion
-  {
-    std::uint16_t Major{};
-    std::uint16_t Minor{};
-    std::uint32_t Patch{};
-  };
-
-  /**
-   * Utility function to get XrInstance runtime version for given ConnectionStrategy
-   * This function creates a XrInstance, which may have a significant runtime overhead.
-   */
-  static InstanceVersion QueryInstanceVersion(vtkOpenXRManagerConnection* cs);
 
   ///@{
   /**
@@ -651,7 +642,8 @@ private:
   vtkOpenXRManager(const vtkOpenXRManager&) = delete;
   void operator=(const vtkOpenXRManager&) = delete;
 };
-
 VTK_ABI_NAMESPACE_END
+} // namespace vtk::detail
+
 #endif
 // VTK-HeaderTest-Exclude: vtkOpenXRManager.h

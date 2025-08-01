@@ -21,6 +21,7 @@ set(nowrap_classes
 
 set(nowrap_headers
   vtkOpenXR.h
+  vtkOpenXRDefinitions.h
   vtkOpenXRPlatform.h
   vtkOpenXRUtilities.h
   XrExtensions.h

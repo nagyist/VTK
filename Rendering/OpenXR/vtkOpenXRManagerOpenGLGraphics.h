@@ -29,6 +29,13 @@ typedef XrGraphicsBindingOpenGLWin32KHR XrGraphicsBindingOpenGL;
 #endif
 struct XrSwapchainImageOpenGLKHR;
 
+namespace vtk::detail
+{
+VTK_ABI_NAMESPACE_BEGIN
+class vtkOpenXRManager;
+VTK_ABI_NAMESPACE_END
+}
+
 VTK_ABI_NAMESPACE_BEGIN
 class VTKRENDERINGOPENXR_EXPORT vtkOpenXRManagerOpenGLGraphics : public vtkOpenXRManagerGraphics
 {
@@ -78,11 +85,6 @@ public:
   const void* GetGraphicsBinding() override { return this->GraphicsBinding.get(); };
 
   /**
-   * Check OpenGL version supported by the runtime
-   */
-  bool CheckGraphicsRequirements(XrInstance instance, XrSystemId id) override;
-
-  /**
    * Return the extension name corresponding to the OpenGL rendering backend
    */
   const char* GetBackendExtensionName() override;
@@ -105,6 +107,11 @@ protected:
   void EnumerateSwapchainImages(XrSwapchain swapchain, SwapchainImagesOpenGL& swapchainImages);
 
   std::shared_ptr<XrGraphicsBindingOpenGL> GraphicsBinding;
+
+  /**
+   * Check OpenGL version supported by the runtime
+   */
+  bool CheckGraphicsRequirements(vtk::detail::vtkOpenXRManager& manager) override;
 
 private:
   vtkOpenXRManagerOpenGLGraphics(const vtkOpenXRManagerOpenGLGraphics&) = delete;

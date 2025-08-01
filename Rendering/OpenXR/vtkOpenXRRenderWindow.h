@@ -35,14 +35,16 @@
 
 #include "vtkEventData.h" // for method sig
 
-#include <array>  // array
-#include <memory> // unique_ptr
-#include <string> // string
+#include <array>   // array
+#include <cstdint> // uint32_t
+#include <memory>  // unique_ptr
+#include <string>  // string
 
 VTK_ABI_NAMESPACE_BEGIN
 
 class vtkMatrix4x4;
 class vtkOpenXRSceneObserver;
+class vtkOpenXRManagerConnection;
 
 class VTKRENDERINGOPENXR_EXPORT vtkOpenXRRenderWindow : public vtkVRRenderWindow
 {
@@ -205,6 +207,23 @@ public:
    * \sa SetEnableSceneUnderstanding
    */
   vtkOpenXRSceneObserver* GetSceneObserver();
+
+  /**
+   * Structure representing OpenXR instance version
+   */
+  struct VTKRENDERINGOPENXR_EXPORT InstanceVersion
+  {
+    std::uint16_t Major{};
+    std::uint16_t Minor{};
+    std::uint32_t Patch{};
+  };
+
+  /**
+   * Utility function to get XrInstance runtime version for the given ConnectionStrategy.
+   * This function creates a XrInstance, which may have a significant runtime overhead.
+   * This function can be called only before the vtkOpenXRRenderWindow has been initialized.
+   */
+  static InstanceVersion QueryInstanceVersion(vtkOpenXRManagerConnection* cs);
 
 protected:
   vtkOpenXRRenderWindow();

@@ -15,8 +15,6 @@
 #include "vtkOpenXRManagerConnection.h"
 #include "vtkRenderingOpenXRRemotingModule.h" // For export macro
 
-#include "vtkOpenXR.h" // For XrInstance/XrSystemId
-
 VTK_ABI_NAMESPACE_BEGIN
 class VTKRENDERINGOPENXRREMOTING_EXPORT vtkOpenXRManagerRemoteConnection
   : public vtkOpenXRManagerConnection
@@ -27,7 +25,6 @@ public:
 
   bool Initialize() override;
   bool EndInitialize() override;
-  bool ConnectToRemote(XrInstance instance, XrSystemId id) override;
 
   ///@{
   /**
@@ -46,14 +43,11 @@ public:
    */
   const char* GetExtensionName() override;
 
-  /**
-   * Handle connection/deconnection events
-   */
-  bool HandleXrEvent(const XrEventDataBuffer& eventData) override;
-
 protected:
   vtkOpenXRManagerRemoteConnection() = default;
   ~vtkOpenXRManagerRemoteConnection() = default;
+
+  bool ConnectToRemote(vtk::detail::vtkOpenXRManager& manager) override;
 
 private:
   vtkOpenXRManagerRemoteConnection(const vtkOpenXRManagerRemoteConnection&) = delete;

@@ -1,3 +1,4 @@
+vtk_module_find_package(PACKAGE OpenXR VERSION 1.0.31)
 vtk_module_find_package(PACKAGE OpenXRRemoting)
 
 set(classes vtkOpenXRRemotingRenderWindow)
@@ -15,6 +16,6 @@ vtk_module_add_module(VTK::RenderingOpenXRRemoting
   NOWRAP_HEADERS ${nowrap_headers}
   )
 
-vtk_module_link(VTK::RenderingOpenXRRemoting PUBLIC OpenXR::Remoting)
+vtk_module_link(VTK::RenderingOpenXRRemoting PRIVATE OpenXR::Remoting OpenXR::openxr_loader OpenXR::headers)
 
 vtk_add_test_mangling(VTK::RenderingOpenXRRemoting)

@@ -25,68 +25,9 @@
     return false;                                                                                  \
   }
 
-VTK_ABI_NAMESPACE_BEGIN
-
-//------------------------------------------------------------------------------
-vtkOpenXRManager::InstanceVersion vtkOpenXRManager::QueryInstanceVersion(
-  vtkOpenXRManagerConnection* cs)
+namespace vtk::detail
 {
-  if (!cs->Initialize())
-  {
-    vtkWarningWithObjectMacro(nullptr, "Failed to initialize connection strategy.");
-    return {};
-  }
-
-  std::vector<const char*> enabledExtensions; // enable cs extension, if any
-  if (std::strlen(cs->GetExtensionName()) != 0)
-  {
-    enabledExtensions.emplace_back(cs->GetExtensionName());
-  }
-
-  // Create the instance with enabled extensions.
-  XrInstanceCreateInfo createInfo{ XR_TYPE_INSTANCE_CREATE_INFO };
-  createInfo.applicationInfo = XrApplicationInfo{
-    "OpenXR with VTK",    // .applicationName
-    1,                    // .applicationVersion
-    "",                   // .engineName
-    1,                    // .engineVersion
-#ifdef XR_API_VERSION_1_0 // available with OpenXR 1.1.37 or later:
-    XR_API_VERSION_1_0,   // .apiVersion
-#else                     // for 1.1.36 and earlier:
-    XR_MAKE_VERSION(1, 0, XR_VERSION_PATCH(XR_CURRENT_API_VERSION)), // .apiVersion
-#endif
-  };
-  createInfo.enabledExtensionCount = static_cast<uint32_t>(enabledExtensions.size());
-  createInfo.enabledExtensionNames = enabledExtensions.data();
-
-  XrInstance instance;
-  if (xrCreateInstance(&createInfo, &instance) != XR_SUCCESS)
-  {
-    vtkWarningWithObjectMacro(nullptr, "Failed to create instance for version query.");
-    return {};
-  }
-
-  XrInstanceProperties properties{ XR_TYPE_INSTANCE_PROPERTIES };
-  if (xrGetInstanceProperties(instance, &properties))
-  {
-    vtkWarningWithObjectMacro(nullptr, "Failed to get instance properties.");
-    return {};
-  }
-
-  InstanceVersion output;
-  output.Major = XR_VERSION_MAJOR(properties.runtimeVersion);
-  output.Minor = XR_VERSION_MINOR(properties.runtimeVersion);
-  output.Patch = XR_VERSION_PATCH(properties.runtimeVersion);
-
-  if (!cs->EndInitialize())
-  {
-    vtkWarningWithObjectMacro(nullptr, "Failed to terminate connection strategy initialization.");
-  }
-
-  xrDestroyInstance(instance);
-
-  return output;
-}
+VTK_ABI_NAMESPACE_BEGIN
 
 //------------------------------------------------------------------------------
 vtkOpenXRManager::vtkOpenXRManager()
@@ -128,7 +69,7 @@ bool vtkOpenXRManager::Initialize(vtkOpenXRRenderWindow* xrWindow)
     return false;
   }
 
-  if (!this->GraphicsStrategy->CheckGraphicsRequirements(this->Instance, this->SystemId))
+  if (!this->GraphicsStrategy->CheckGraphicsRequirements(*this))
   {
     vtkWarningWithObjectMacro(nullptr, "Initialize failed in CheckGraphicsRequirements");
     return false;
@@ -141,7 +82,7 @@ bool vtkOpenXRManager::Initialize(vtkOpenXRRenderWindow* xrWindow)
   }
 
   // When using remoting, the connection must be established before creating the session
-  if (!this->ConnectionStrategy->ConnectToRemote(this->Instance, this->SystemId))
+  if (!this->ConnectionStrategy->ConnectToRemote(*this))
   {
     vtkWarningWithObjectMacro(nullptr, "Failed to connect.");
     return false;
@@ -1538,4 +1479,6 @@ bool vtkOpenXRManager::ApplyVibration(const Action_t& actionT, const int hand,
   }
   return true;
 }
+
 VTK_ABI_NAMESPACE_END
+} // namespace vtk::detail
