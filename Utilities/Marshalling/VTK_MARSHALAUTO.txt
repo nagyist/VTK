@@ -151,10 +151,10 @@ Filters/Core/vtkDataObjectToDataSetFilter.h
 Filters/Core/vtkDataSetEdgeSubdivisionCriterion.h
 Filters/Core/vtkDataSetToDataObjectFilter.h
 Filters/Core/vtkDecimatePolylineAngleStrategy.h
-Filters/Core/vtkDecimatePolylineStrategy.h
 Filters/Core/vtkDecimatePolylineCustomFieldStrategy.h
 Filters/Core/vtkDecimatePolylineDistanceStrategy.h
 Filters/Core/vtkDecimatePolylineFilter.h
+Filters/Core/vtkDecimatePolylineStrategy.h
 Filters/Core/vtkDecimatePro.h
 Filters/Core/vtkDelaunay2D.h
 Filters/Core/vtkDelaunay3D.h
@@ -221,12 +221,12 @@ Filters/Core/vtkSimpleElevationFilter.h
 Filters/Core/vtkSmoothPolyDataFilter.h
 Filters/Core/vtkSphereTreeFilter.h
 Filters/Core/vtkSplitSharpEdgesPolyData.h
-Filters/Core/vtkStructuredDataPlaneCutter.h
 Filters/Core/vtkStaticCleanPolyData.h
 Filters/Core/vtkStaticCleanUnstructuredGrid.h
 Filters/Core/vtkStreamerBase.h
 Filters/Core/vtkStreamingTessellator.h
 Filters/Core/vtkStripper.h
+Filters/Core/vtkStructuredDataPlaneCutter.h
 Filters/Core/vtkStructuredGridAppend.h
 Filters/Core/vtkStructuredGridOutlineFilter.h
 Filters/Core/vtkSurfaceNets2D.h
@@ -247,6 +247,9 @@ Filters/Core/vtkUnstructuredGridToExplicitStructuredGrid.h
 Filters/Core/vtkVectorDot.h
 Filters/Core/vtkVectorNorm.h
 Filters/Core/vtkWindowedSincPolyDataFilter.h
+Filters/Meshing/vtkGeneralizedSurfaceNets3D.h
+Filters/Meshing/vtkVoronoiFlower2D.h
+Filters/Meshing/vtkVoronoiFlower3D.h
 Filters/Sources/vtkArcSource.h
 Filters/Sources/vtkArrowSource.h
 Filters/Sources/vtkButtonSource.h
@@ -292,9 +295,6 @@ Filters/Sources/vtkTessellatedBoxSource.h
 Filters/Sources/vtkTextSource.h
 Filters/Sources/vtkTexturedSphereSource.h
 Filters/Sources/vtkUniformHyperTreeGridSource.h
-Filters/Meshing/vtkVoronoiFlower2D.h
-Filters/Meshing/vtkVoronoiFlower3D.h
-Filters/Meshing/vtkGeneralizedSurfaceNets3D.h
 Imaging/Color/vtkImageMapToWindowLevelColors.h
 Imaging/Core/vtkAbstractImageInterpolator.h
 Imaging/Core/vtkImageInterpolator.h
@@ -636,8 +636,8 @@ Rendering/UI/vtkWebAssemblyHardwareWindow.h
 Rendering/UI/vtkWebAssemblyRenderWindowInteractor.h
 Rendering/UI/vtkWin32HardwareWindow.h
 Rendering/UI/vtkWin32RenderWindowInteractor.h
-Rendering/UI/vtkXRenderWindowInteractor.h
 Rendering/UI/vtkXlibHardwareWindow.h
+Rendering/UI/vtkXRenderWindowInteractor.h
 Rendering/Volume/vtkFixedPointVolumeRayCastMapper.h
 Rendering/Volume/vtkGPUVolumeRayCastMapper.h
 Rendering/Volume/vtkProjectedTetrahedraMapper.h
@@ -668,8 +668,8 @@ Rendering/WebGPU/vtkWebGPURenderTextureCache.h
 Rendering/WebGPU/vtkWebGPURenderWindow.h
 Rendering/WebGPU/vtkWebGPUShaderDatabase.h
 Rendering/WebGPU/vtkWebGPUShaderProperty.h
-Rendering/WebGPU/vtkWebGPUTextureDeviceResource.h
 Rendering/WebGPU/vtkWebGPUTexture.h
+Rendering/WebGPU/vtkWebGPUTextureDeviceResource.h
 Rendering/WebGPU/vtkWebGPUTextureView.h
 Rendering/WebXR/vtkWebXRCamera.h
 Rendering/WebXR/vtkWebXRInteractorStyle.h
