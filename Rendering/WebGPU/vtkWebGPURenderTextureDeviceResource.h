@@ -10,7 +10,8 @@
 #include "vtkDataArray.h"
 #include "vtkRenderingWebGPUModule.h" // For export macro
 #include "vtkWebGPUTextureDeviceResource.h"
-#include "vtk_wgpu.h" // for webgpu
+#include "vtkWrappingHints.h" // For VTK_MARSHALAUTO
+#include "vtk_wgpu.h"         // for webgpu
 
 #include <cstdint>
 
@@ -18,7 +19,7 @@ VTK_ABI_NAMESPACE_BEGIN
 class vtkWindow;
 class vtkImageData;
 class vtkWebGPUConfiguration;
-class VTKRENDERINGWEBGPU_EXPORT vtkWebGPURenderTextureDeviceResource
+class VTKRENDERINGWEBGPU_EXPORT VTK_MARSHALAUTO vtkWebGPURenderTextureDeviceResource
   : public vtkWebGPUTextureDeviceResource
 {
 public:
@@ -121,16 +122,16 @@ public:
   /**
    * Get/set the maximum anisotropy level
    */
-  vtkGetMacro(MaxAnisotropy, std::uint16_t);
-  vtkSetMacro(MaxAnisotropy, std::uint16_t);
+  vtkGetMacro(MaxAnisotropy, vtkTypeUInt16);
+  vtkSetMacro(MaxAnisotropy, vtkTypeUInt16);
   ///@}
 
   ///@{
   /**
    * Get/set the sample count for multi-sampled textures
    */
-  vtkGetMacro(SampleCount, std::uint32_t);
-  vtkSetMacro(SampleCount, std::uint32_t);
+  vtkGetMacro(SampleCount, vtkTypeUInt32);
+  vtkSetMacro(SampleCount, vtkTypeUInt32);
   ///@}
 
   /**
@@ -211,10 +212,10 @@ private:
 
   float LODMinClamp = 0.0f;
   float LODMaxClamp = 32.0f;
-  std::uint16_t MaxAnisotropy = 1;
+  vtkTypeUInt16 MaxAnisotropy = 1;
 
-  std::uint32_t SampleCount = 1;
-  std::uint32_t BaseMipLevel = 0;
+  vtkTypeUInt32 SampleCount = 1;
+  vtkTypeUInt32 BaseMipLevel = 0;
 
   std::string Label;
 

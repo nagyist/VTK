@@ -666,6 +666,7 @@ Rendering/WebGPU/vtkWebGPUProperty.h
 Rendering/WebGPU/vtkWebGPURenderer.h
 Rendering/WebGPU/vtkWebGPURenderPipelineCache.h
 Rendering/WebGPU/vtkWebGPURenderTextureCache.h
+Rendering/WebGPU/vtkWebGPURenderTextureDeviceResource.h
 Rendering/WebGPU/vtkWebGPURenderWindow.h
 Rendering/WebGPU/vtkWebGPUShaderDatabase.h
 Rendering/WebGPU/vtkWebGPUShaderProperty.h
