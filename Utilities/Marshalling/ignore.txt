@@ -843,7 +843,6 @@ Rendering/UI/vtkAndroidRenderWindowInteractor.h
 Rendering/UI/vtkCocoaAutoreleasePool.h
 Rendering/UI/vtkCocoaMacOSXSDKCompatibility.h
 Rendering/UI/vtkIOSRenderWindowInteractor.h
-Rendering/UI/vtkWaylandHardwareWindow.h
 Rendering/Volume/vtkAnariVolumeInterface.h
 Rendering/Volume/vtkBlockSortHelper.h
 Rendering/Volume/vtkDirectionEncoder.h

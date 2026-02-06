@@ -15,6 +15,7 @@
 
 #include "vtkHardwareWindow.h"
 #include "vtkRenderingUIModule.h" // For export macro
+#include "vtkWrappingHints.h"     // For VTK_MARSHALAUTO
 
 // Forward declarations for Wayland types to keep the header clean.
 // The actual headers will be included in the .cxx file.
@@ -34,7 +35,7 @@ struct zxdg_decoration_manager_v1;
 
 VTK_ABI_NAMESPACE_BEGIN
 
-class VTKRENDERINGUI_EXPORT vtkWaylandHardwareWindow : public vtkHardwareWindow
+class VTKRENDERINGUI_EXPORT VTK_MARSHALAUTO vtkWaylandHardwareWindow : public vtkHardwareWindow
 {
 public:
   static vtkWaylandHardwareWindow* New();
