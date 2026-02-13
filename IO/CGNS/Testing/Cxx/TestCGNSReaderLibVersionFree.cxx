@@ -26,6 +26,8 @@
     }                                                                                              \
   } while (false)
 
+namespace
+{
 int ModifyCGNSLibVersion(const std::string& FileName)
 {
   int cgioFile;
@@ -110,6 +112,7 @@ ModifyError:
   cgio_close_file(cgioFile);
   return ierr ? 1 : 0;
 }
+}
 
 int TestCGNSReaderLibVersionFree(int argc, char* argv[])
 {
@@ -117,7 +120,7 @@ int TestCGNSReaderLibVersionFree(int argc, char* argv[])
   std::string upgradedFile = fname ? fname : "";
   delete[] fname;
 
-  if (ModifyCGNSLibVersion(upgradedFile))
+  if (::ModifyCGNSLibVersion(upgradedFile))
   {
     return EXIT_FAILURE;
   }
