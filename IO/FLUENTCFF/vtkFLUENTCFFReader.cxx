@@ -2520,23 +2520,16 @@ int vtkFLUENTCFFReader::GetData()
               {
                 numberOfComponents = dims[1];
               }
-              if (numberOfComponents > 9)
+
+              this->NumberOfArrays++;
+              this->DataChunks.emplace_back();
+              this->DataChunks.back().dim = numberOfComponents;
+              this->DataChunks.back().variableName = strSectionName;
+              for (std::size_t k = 0; k < static_cast<std::size_t>(numberOfComponents); k++)
               {
-                vtkWarningMacro("The field " << strSectionName
-                                             << " has more than 9 components, it can't be parsed.");
-              }
-              else
-              {
-                this->NumberOfArrays++;
-                this->DataChunks.emplace_back();
-                this->DataChunks.back().dim = numberOfComponents;
-                this->DataChunks.back().variableName = strSectionName;
-                for (std::size_t k = 0; k < static_cast<std::size_t>(numberOfComponents); k++)
+                for (std::size_t j = minId; j <= maxId; j++)
                 {
-                  for (std::size_t j = minId; j <= maxId; j++)
-                  {
-                    this->DataChunks.back().dataVector.push_back(data[k * maxId + (j - 1)]);
-                  }
+                  this->DataChunks.back().dataVector.push_back(data[k * maxId + (j - 1)]);
                 }
               }
             }
