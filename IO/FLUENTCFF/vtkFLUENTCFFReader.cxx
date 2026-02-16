@@ -1708,22 +1708,34 @@ void vtkFLUENTCFFReader::GetInterfaceFaceParents()
       }
       CHECK_HDF(H5Dread(dset, H5T_NATIVE_UINT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, pf0.data()));
       CHECK_HDF(H5Dclose(dset));
-      dset = H5Dopen(group_int, "pf1", H5P_DEFAULT);
-      if (dset < 0)
+
+      bool pf1Exists = H5Lexists(group_int, "pf1", H5P_DEFAULT) > 0;
+
+      if (pf1Exists)
       {
-        throw std::runtime_error("Unable to open HDF dataset (GetInterfaceFaceParents topology).");
+
+        dset = H5Dopen(group_int, "pf1", H5P_DEFAULT);
+        if (dset < 0)
+        {
+          throw std::runtime_error(
+            "Unable to open HDF dataset (GetInterfaceFaceParents topology).");
+        }
+        CHECK_HDF(H5Dread(dset, H5T_NATIVE_UINT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, pf1.data()));
+        CHECK_HDF(H5Dclose(dset));
       }
-      CHECK_HDF(H5Dread(dset, H5T_NATIVE_UINT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, pf1.data()));
-      CHECK_HDF(H5Dclose(dset));
 
       for (unsigned int i = static_cast<unsigned int>(minId); i <= static_cast<unsigned int>(maxId);
            i++)
       {
         unsigned int parentId0 = static_cast<unsigned int>(pf0[i - minId]);
-        unsigned int parentId1 = static_cast<unsigned int>(pf1[i - minId]);
-
         this->Faces[parentId0 - 1].interfaceFaceParent = 1;
-        this->Faces[parentId1 - 1].interfaceFaceParent = 1;
+
+        if (pf1Exists)
+        {
+          unsigned int parentId1 = static_cast<unsigned int>(pf1[i - minId]);
+          this->Faces[parentId1 - 1].interfaceFaceParent = 1;
+        }
+
         this->Faces[i - 1].interfaceFaceChild = 1;
       }
       CHECK_HDF(H5Gclose(group_int));
