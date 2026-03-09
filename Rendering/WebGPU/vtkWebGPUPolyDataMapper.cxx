@@ -3512,48 +3512,82 @@ void vtkWebGPUPolyDataMapper::ReplaceFragmentShaderLights(
   vtkWebGPUActor* vtkNotUsed(wgpuActor), std::string& fss)
 {
   vtkWebGPURenderPipelineCache::Substitute(fss, "//VTK::Lights::Impl",
-    R"(if scene_lights.count == 0u || !isLightingEnabled(actor.render_options.flags_2)
+    R"(
+if scene_lights.count == 0u || !isLightingEnabled(actor.render_options.flags_2)
+{
+  // No lights: ambient + diffuse only
+  output.color = vec4<f32>(
+    actor.color_options.ambient_intensity * ambient_color + actor.color_options.diffuse_intensity * diffuse_color,
+    actor.color_options.opacity * opacity
+  );
+}
+else
+{
+  var total_diffuse: vec3<f32> = vec3<f32>(0.0);
+  var total_specular: vec3<f32> = vec3<f32>(0.0);
+  var total_ambient: vec3<f32> = actor.color_options.ambient_intensity * ambient_color;
+
+  // In view space, the camera is at the origin.
+  let frag_position_vc: vec3<f32> = vertex.position_VC.xyz;
+  let view_dir: vec3<f32> = normalize(-frag_position_vc);
+
+  for(var i: u32 = 0u; i < scene_lights.count; i = i + 1u)
   {
-    // allow post-processing this pixel.
-    output.color = vec4<f32>(
-      actor.color_options.ambient_intensity * ambient_color + actor.color_options.diffuse_intensity * diffuse_color,
-      actor.color_options.opacity * opacity
-    );
-  }
-  else if scene_lights.count == 1u
-  {
-    let light: SceneLight = scene_lights.values[0];
-    if light.positional == 1u
+    let light: SceneLight = scene_lights.values[i];
+    let light_color: vec3<f32> = light.color;
+
+    // Compute diffuse and reflect direction based on light type
+    var df: f32 = 0.0;
+    var reflect_dir: vec3<f32>;
+
+    if(light.light_type == VTK_LIGHT_TYPE_HEADLIGHT)
     {
-      // TODO: positional
-      output.color = vec4<f32>(
-          actor.color_options.ambient_intensity * ambient_color + actor.color_options.diffuse_intensity * diffuse_color,
-          actor.color_options.opacity * opacity
-      );
+      // Headlight: illuminates along the camera view direction (i.e., -z in view space)
+      df = max(0.000001f, normal_VC.z);
+      reflect_dir = reflect(vec3<f32>(0.0, 0.0, -1.0), normal_VC);
+    }
+    else if(light.positional == 0u)
+    {
+      // Directional camera or scene light
+      let light_dir: vec3<f32> = normalize(light.direction_vc);
+      df = max(dot(normal_VC, light_dir), 0.0);
+      reflect_dir = reflect(-light_dir, normal_VC);
+    }
+    else if(light.cone_angle >= 90.0f)
+    {
+      // Positional (point) light
+      let lvec: vec3<f32> = normalize(light.position_vc - frag_position_vc);
+      df = max(dot(normal_VC, lvec), 0.0);
+      reflect_dir = reflect(-lvec, normal_VC);
     }
     else
     {
-      // headlight
-      let df: f32 = max(0.000001f, normal_VC.z);
-      let sf: f32 = pow(df, actor.color_options.specular_power);
-      diffuse_color = df * diffuse_color * light.color;
-      specular_color = sf * actor.color_options.specular_intensity * actor.color_options.specular_color * light.color;
-      output.color = vec4<f32>(
-          actor.color_options.ambient_intensity * ambient_color + actor.color_options.diffuse_intensity * diffuse_color + specular_color,
-          actor.color_options.opacity * opacity
-      );
+      // Spot light
+      let lvec: vec3<f32> = normalize(light.position_vc - frag_position_vc);
+      let spot_dir: vec3<f32> = normalize(light.direction_vc);
+      let spot_cos: f32 = dot(lvec, spot_dir);
+      let spot_cutoff: f32 = cos(radians(light.cone_angle));
+      if(spot_cos > spot_cutoff)
+      {
+        df = max(dot(normal_VC, lvec), 0.0) * pow(spot_cos, light.exponent);
+      }
+      reflect_dir = reflect(-lvec, normal_VC);
     }
+
+    // Diffuse contribution
+    total_diffuse += df * diffuse_color * light_color;
+
+    // Specular contribution
+    let sf: f32 = pow(max(dot(view_dir, reflect_dir), 0.0), actor.color_options.specular_power);
+    total_specular += sf * actor.color_options.specular_intensity * actor.color_options.specular_color * light_color;
   }
-  else
-  {
-    // TODO: light kit
-    output.color = vec4<f32>(
-      actor.color_options.ambient_intensity * ambient_color + actor.color_options.diffuse_intensity * diffuse_color,
-      opacity
-    );
-  }
-  // pre-multiply colors
-  output.color = vec4(output.color.rgb, opacity);)",
+
+  output.color = vec4<f32>(
+    total_ambient + actor.color_options.diffuse_intensity * total_diffuse + total_specular,
+    actor.color_options.opacity * opacity
+  );
+}
+)",
     /*all=*/true);
 }
 
