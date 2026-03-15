@@ -120,7 +120,7 @@ void vtkAxisActor::SetLabelFormat(const char* formatArg)
 {
   std::string format = formatArg ? vtk::to_std_format(formatArg) : "";
   const char* formatStr = format.c_str();
-  vtkSetStringBodyMacro(LabelFormat, formatStr);
+  vtkSetStringBodyMacro(LabelFormat, formatStr)
 }
 
 //------------------------------------------------------------------------------

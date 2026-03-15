@@ -98,7 +98,7 @@ void vtkSerDesMock::CallWithArguments(CStyleEnum arg0, MemberScopedEnum arg1,
   this->NumericScalarValue = arg4;
   std::copy(arg5, arg5 + (sizeof(this->NumericArrayValue) / sizeof(this->NumericArrayValue[0])),
     this->NumericArrayValue);
-  vtkSetStringBodyMacro(CharPointerValue, arg6);
+  vtkSetStringBodyMacro(CharPointerValue, arg6)
   this->StdStringValue = arg7;
   std::copy(arg8.begin(), arg8.end(), std::back_inserter(this->StdVectorOfIntValue));
   std::copy(arg9.begin(), arg9.end(), std::back_inserter(this->StdVectorOfRealValue));

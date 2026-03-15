@@ -70,7 +70,7 @@ void vtkImageWriter::PrintSelf(ostream& os, vtkIndent indent)
 
 void vtkImageWriter::SetFilePattern(const char* formatArg)
 {
-  vtkSetStringBodyMacro(FilePattern, formatArg);
+  vtkSetStringBodyMacro(FilePattern, formatArg)
 }
 
 //------------------------------------------------------------------------------

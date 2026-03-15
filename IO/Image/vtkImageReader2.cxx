@@ -219,7 +219,7 @@ void vtkImageReader2::SetFileNames(vtkStringArray* filenames)
 // pattern of a series: image.001, image.002 ...
 void vtkImageReader2::SetFilePattern(const char* formatArg)
 {
-  vtkSetStringBodyMacro(FilePattern, formatArg);
+  vtkSetStringBodyMacro(FilePattern, formatArg)
 }
 
 //------------------------------------------------------------------------------

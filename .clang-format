@@ -164,4 +164,5 @@ StatementMacros:
 - VTKKWRCHelper_InterpolateShading
 - vtkDGDispatchRange
 - vtkSetStringMacroBody
+- vtkSetStringBodyMacro
 ...

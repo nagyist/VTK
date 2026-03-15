@@ -48,7 +48,7 @@ vtkPDataSetWriter::~vtkPDataSetWriter()
 //------------------------------------------------------------------------------
 void vtkPDataSetWriter::SetFilePattern(const char* formatArg)
 {
-  vtkSetStringBodyMacro(FilePattern, formatArg);
+  vtkSetStringBodyMacro(FilePattern, formatArg)
   this->FilePatternStdFormat = formatArg ? vtk::to_std_format(formatArg) : "";
 }
 
