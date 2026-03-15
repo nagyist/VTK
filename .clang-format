@@ -165,4 +165,5 @@ StatementMacros:
 - vtkDGDispatchRange
 - vtkSetStringMacroBody
 - vtkSetStringBodyMacro
+- ReadFileMacro
 ...

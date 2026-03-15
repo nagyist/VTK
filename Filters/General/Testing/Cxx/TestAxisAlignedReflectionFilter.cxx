@@ -86,7 +86,7 @@ vtkSmartPointer<vtkPartitionedDataSetCollection> Reflect(vtkAlgorithmOutput* por
 
 int TestUnstructuredGrid(int argc, char* argv[])
 {
-  ReadFileMacro("Data/can.vtu", vtkXMLUnstructuredGridReader);
+  ReadFileMacro("Data/can.vtu", vtkXMLUnstructuredGridReader)
 
   vtkSmartPointer<vtkPartitionedDataSetCollection> output =
     Reflect(reader->GetOutputPort(), true, true, vtkAxisAlignedReflectionFilter::X_MIN);
@@ -157,7 +157,7 @@ int TestUnstructuredGrid(int argc, char* argv[])
 
 int TestImageData(int argc, char* argv[])
 {
-  ReadFileMacro("Data/scalars.vti", vtkXMLImageDataReader);
+  ReadFileMacro("Data/scalars.vti", vtkXMLImageDataReader)
 
   PlaneParams planeParams;
   planeParams.normal[0] = 1.0;
@@ -187,7 +187,7 @@ int TestImageData(int argc, char* argv[])
 
 int TestRectilinearGrid(int argc, char* argv[])
 {
-  ReadFileMacro("Data/rectGrid.vtr", vtkXMLRectilinearGridReader);
+  ReadFileMacro("Data/rectGrid.vtr", vtkXMLRectilinearGridReader)
 
   vtkSmartPointer<vtkPartitionedDataSetCollection> output =
     Reflect(reader->GetOutputPort(), true, false, vtkAxisAlignedReflectionFilter::Y_MAX);
@@ -211,7 +211,7 @@ int TestRectilinearGrid(int argc, char* argv[])
 
 int TestExplicitStructuredGrid(int argc, char* argv[])
 {
-  ReadFileMacro("Data/explicitStructuredGrid.vtu", vtkXMLUnstructuredGridReader);
+  ReadFileMacro("Data/explicitStructuredGrid.vtu", vtkXMLUnstructuredGridReader)
   vtkSmartPointer<vtkUnstructuredGridToExplicitStructuredGrid> UgToEsg =
     vtkSmartPointer<vtkUnstructuredGridToExplicitStructuredGrid>::New();
   UgToEsg->SetInputConnection(reader->GetOutputPort());
@@ -245,7 +245,7 @@ int TestExplicitStructuredGrid(int argc, char* argv[])
 
 int TestStructuredGrid(int argc, char* argv[])
 {
-  ReadFileMacro("Data/structGrid.vts", vtkXMLStructuredGridReader);
+  ReadFileMacro("Data/structGrid.vts", vtkXMLStructuredGridReader)
 
   vtkSmartPointer<vtkPartitionedDataSetCollection> output =
     Reflect(reader->GetOutputPort(), true, true, vtkAxisAlignedReflectionFilter::Z_MAX);
@@ -269,7 +269,7 @@ int TestStructuredGrid(int argc, char* argv[])
 
 int TestPolyData(int argc, char* argv[])
 {
-  ReadFileMacro("Data/cow.vtp", vtkXMLPolyDataReader);
+  ReadFileMacro("Data/cow.vtp", vtkXMLPolyDataReader)
 
   vtkSmartPointer<vtkPartitionedDataSetCollection> output =
     Reflect(reader->GetOutputPort(), true, true, vtkAxisAlignedReflectionFilter::X_MAX);
@@ -367,7 +367,7 @@ int TestPolyData(int argc, char* argv[])
 
 int TestHyperTreeGrid(int argc, char* argv[])
 {
-  ReadFileMacro("Data/HTG/shell_3d.htg", vtkXMLHyperTreeGridReader);
+  ReadFileMacro("Data/HTG/shell_3d.htg", vtkXMLHyperTreeGridReader)
 
   vtkSmartPointer<vtkPartitionedDataSetCollection> output =
     Reflect(reader->GetOutputPort(), true, true, vtkAxisAlignedReflectionFilter::Y_MIN);
@@ -417,7 +417,7 @@ int TestHyperTreeGrid(int argc, char* argv[])
 
 int TestPartitionedDataSetCollection(int argc, char* argv[])
 {
-  ReadFileMacro("Data/sphereMirror.vtpc", vtkXMLPartitionedDataSetCollectionReader);
+  ReadFileMacro("Data/sphereMirror.vtpc", vtkXMLPartitionedDataSetCollectionReader)
 
   vtkSmartPointer<vtkPartitionedDataSetCollection> output =
     Reflect(reader->GetOutputPort(), true, true, vtkAxisAlignedReflectionFilter::X_MIN);
@@ -460,7 +460,7 @@ int TestPartitionedDataSetCollection(int argc, char* argv[])
 
 int TestMultiBlockMultiPiece(int argc, char* argv[])
 {
-  ReadFileMacro("Data/mb-of-mps.vtm", vtkXMLMultiBlockDataReader);
+  ReadFileMacro("Data/mb-of-mps.vtm", vtkXMLMultiBlockDataReader)
 
   vtkSmartPointer<vtkPartitionedDataSetCollection> output =
     Reflect(reader->GetOutputPort(), true, true, vtkAxisAlignedReflectionFilter::X_MIN);
@@ -492,7 +492,7 @@ int TestMultiBlockMultiPiece(int argc, char* argv[])
 
 int TestMultiBlockOnlyDataSets(int argc, char* argv[])
 {
-  ReadFileMacro("Data/distTest.vtm", vtkXMLMultiBlockDataReader);
+  ReadFileMacro("Data/distTest.vtm", vtkXMLMultiBlockDataReader)
 
   vtkSmartPointer<vtkPartitionedDataSetCollection> output =
     Reflect(reader->GetOutputPort(), true, true, vtkAxisAlignedReflectionFilter::X_MIN);
@@ -524,7 +524,7 @@ int TestMultiBlockOnlyDataSets(int argc, char* argv[])
 
 int TestMultiBlockEmptyPiece(int argc, char* argv[])
 {
-  ReadFileMacro("Data/mb_single_piece_empty_data.vtm", vtkXMLMultiBlockDataReader);
+  ReadFileMacro("Data/mb_single_piece_empty_data.vtm", vtkXMLMultiBlockDataReader)
 
   vtkSmartPointer<vtkPartitionedDataSetCollection> output =
     Reflect(reader->GetOutputPort(), true, true, vtkAxisAlignedReflectionFilter::X_MIN);
@@ -537,7 +537,7 @@ int TestMultiBlockEmptyPiece(int argc, char* argv[])
 
 int TestUnstructuredGridWithGlobalIds(int argc, char* argv[])
 {
-  ReadFileMacro("Data/ugWithGlobalIds.vtu", vtkXMLUnstructuredGridReader);
+  ReadFileMacro("Data/ugWithGlobalIds.vtu", vtkXMLUnstructuredGridReader)
 
   vtkSmartPointer<vtkPartitionedDataSetCollection> output =
     Reflect(reader->GetOutputPort(), true, true, vtkAxisAlignedReflectionFilter::Z_MAX);
