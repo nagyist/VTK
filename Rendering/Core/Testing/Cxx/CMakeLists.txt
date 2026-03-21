@@ -33,6 +33,7 @@ set(cxx_tests
   TestBlockOpacity.cxx
   TestBlockVisibility.cxx
   TestCellScalarMappedColors.cxx,NO_DATA
+  TestCoincident.cxx
   TestColorByCellDataStringArray.cxx
   TestColorByPointDataStringArray.cxx
   TestColorByStringArrayDefaultLookupTable.cxx

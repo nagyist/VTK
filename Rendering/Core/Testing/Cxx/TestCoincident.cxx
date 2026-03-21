@@ -4,7 +4,6 @@
 #include "vtkActor.h"
 #include "vtkCamera.h"
 #include "vtkCellArray.h"
-#include "vtkLightKit.h"
 #include "vtkNew.h"
 #include "vtkPLYReader.h"
 #include "vtkPointData.h"
