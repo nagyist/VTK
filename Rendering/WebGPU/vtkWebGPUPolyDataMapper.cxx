@@ -1970,6 +1970,7 @@ void vtkWebGPUPolyDataMapper::ApplyShaderReplacements(GraphicsPipelineType pipel
   this->ReplaceFragmentShaderEdges(pipelineType, wgpuRenderer, wgpuActor, fss);
   this->ReplaceFragmentShaderLights(pipelineType, wgpuRenderer, wgpuActor, fss);
   this->ReplaceFragmentShaderPicking(pipelineType, wgpuRenderer, wgpuActor, fss);
+  this->ReplaceFragmentShaderCoincidentOffset(pipelineType, wgpuRenderer, wgpuActor, fss);
   this->ReplaceFragmentShaderMainEnd(pipelineType, wgpuRenderer, wgpuActor, fss);
 }
 
@@ -3594,6 +3595,67 @@ void vtkWebGPUPolyDataMapper::ReplaceFragmentShaderPicking(
     output.ids.z = vertex.composite_id + 1;
     output.ids.w = vertex.process_id + 1;)",
     /*all=*/true);
+}
+
+//------------------------------------------------------------------------------
+void vtkWebGPUPolyDataMapper::ReplaceFragmentShaderCoincidentOffset(
+  GraphicsPipelineType pipelineType, vtkWebGPURenderer* vtkNotUsed(wgpuRenderer),
+  vtkWebGPUActor* vtkNotUsed(wgpuActor), std::string& fss)
+{
+  // Select the coincident factor and offset fields from the actor uniform buffer based on the
+  // primitive type handled by this pipeline. The formula mirrors the OpenGL2 implementation:
+  //   frag_depth += c_factor * depth_slope_scale + c_offset / 65000.0
+  // where depth_slope_scale approximates the maximum depth slope (dFdx/dFdy of depth).
+  // When the coincident parameters are zero (resolution is off), this is a no-op.
+  std::string factorExpr;
+  std::string offsetExpr;
+
+  switch (pipelineType)
+  {
+    case GFX_PIPELINE_TRIANGLES:
+    case GFX_PIPELINE_TRIANGLES_HOMOGENEOUS_CELL_SIZE:
+      factorExpr = "actor.render_options.coin_polygon_factor";
+      offsetExpr = "actor.render_options.coin_polygon_offset";
+      break;
+    case GFX_PIPELINE_LINES:
+    case GFX_PIPELINE_LINES_HOMOGENEOUS_CELL_SIZE:
+    case GFX_PIPELINE_LINES_THICK:
+    case GFX_PIPELINE_LINES_THICK_HOMOGENEOUS_CELL_SIZE:
+    case GFX_PIPELINE_LINES_ROUND_CAP_ROUND_JOIN:
+    case GFX_PIPELINE_LINES_ROUND_CAP_ROUND_JOIN_HOMOGENEOUS_CELL_SIZE:
+    case GFX_PIPELINE_LINES_MITER_JOIN:
+    case GFX_PIPELINE_LINES_MITER_JOIN_HOMOGENEOUS_CELL_SIZE:
+      factorExpr = "actor.render_options.coin_line_factor";
+      offsetExpr = "actor.render_options.coin_line_offset";
+      break;
+    case GFX_PIPELINE_POINTS:
+    case GFX_PIPELINE_POINTS_HOMOGENEOUS_CELL_SIZE:
+    case GFX_PIPELINE_POINTS_SHAPED:
+    case GFX_PIPELINE_POINTS_SHAPED_HOMOGENEOUS_CELL_SIZE:
+      // Points have no slope-dependent factor, only a fixed offset.
+      factorExpr = "0.0";
+      offsetExpr = "actor.render_options.coin_point_offset";
+      break;
+    default:
+      return;
+  }
+
+  // Inject the coincident offset computation before //VTK::FragmentMain::End, which will be
+  // replaced by ReplaceFragmentShaderMainEnd with the return statement. We keep the placeholder
+  // so that ReplaceFragmentShaderMainEnd can still find and replace it.
+  const std::string code = "  {\n"
+                           "    let c_factor: f32 = " +
+    factorExpr +
+    ";\n"
+    "    let c_offset: f32 = " +
+    offsetExpr +
+    ";\n"
+    "    let cscale: f32 = length(vec2<f32>(dpdx(output.frag_depth), dpdy(output.frag_depth)));\n"
+    "    output.frag_depth = output.frag_depth + c_factor * cscale + c_offset / 65000.0;\n"
+    "  }\n"
+    "//VTK::FragmentMain::End";
+
+  vtkWebGPURenderPipelineCache::Substitute(fss, "//VTK::FragmentMain::End", code, /*all=*/true);
 }
 
 //------------------------------------------------------------------------------

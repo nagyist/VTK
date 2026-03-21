@@ -425,6 +425,8 @@ protected:
     vtkWebGPURenderer* renderer, vtkWebGPUActor* actor, std::string& fss);
   virtual void ReplaceFragmentShaderPicking(GraphicsPipelineType pipelineType,
     vtkWebGPURenderer* renderer, vtkWebGPUActor* actor, std::string& fss);
+  virtual void ReplaceFragmentShaderCoincidentOffset(GraphicsPipelineType pipelineType,
+    vtkWebGPURenderer* renderer, vtkWebGPUActor* actor, std::string& fss);
   virtual void ReplaceFragmentShaderMainEnd(GraphicsPipelineType pipelineType,
     vtkWebGPURenderer* renderer, vtkWebGPUActor* actor, std::string& fss);
 
