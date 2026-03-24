@@ -94,6 +94,7 @@ set(cxx_tests
   TestImageAndAnnotations.cxx,NO_DATA
   TestInteractorStyleImageProperty.cxx,NO_VALID
   TestLightShallowClone.cxx,NO_DATA,NO_VALID
+  TestLightKit.cxx
   TestLabeledContourMapper.cxx
   TestLabeledContourMapperNoLabels.cxx
   TestLabeledContourMapperWithActorMatrix.cxx
@@ -171,67 +172,67 @@ set(cxx_tests
   # TestViewDependentErrorMetric.cxx # Loads of extra deps - move?
   # TestHierarchicalBoxPipeline.cxx  # legacy code
   )
-  
+
   set(TestLineRenderingTranslucent_ARGS --translucent)
   list(APPEND cxx_tests TestLineRenderingTranslucent,TestLineRendering.cxx,NO_DATA)
 
   set(TestImageMapper_1_ARGS --components 1)
   list(APPEND cxx_tests TestImageMapper_1,TestImageMapper.cxx,NO_DATA)
-  
+
   set(TestImageMapper_2_ARGS --components 2)
   list(APPEND cxx_tests TestImageMapper_2,TestImageMapper.cxx,NO_DATA)
-  
+
   set(TestImageMapper_3_ARGS --components 3)
   list(APPEND cxx_tests TestImageMapper_3,TestImageMapper.cxx,NO_DATA)
-  
+
   set(TestImageMapper_4_ARGS --components 4)
   list(APPEND cxx_tests TestImageMapper_4,TestImageMapper.cxx,NO_DATA)
-  
+
   set(TestMixedGeometry_1_ARGS --point-size 0.5 --line-width 0.5)
   list(APPEND cxx_tests TestMixedGeometry_1,TestMixedGeometry.cxx,NO_DATA)
-  
+
   set(TestMixedGeometry_2_ARGS --point-size 1.0 --line-width 1.0)
   list(APPEND cxx_tests TestMixedGeometry_2,TestMixedGeometry.cxx,NO_DATA)
-  
+
   set(TestMixedGeometry_3_ARGS --point-size 3.0 --line-width 3.0)
   list(APPEND cxx_tests TestMixedGeometry_3,TestMixedGeometry.cxx,NO_DATA)
-  
+
   set(TestPointRendering_1_ARGS --point-size 0.5)
   list(APPEND cxx_tests TestPointRendering_1,TestPointRendering.cxx,NO_DATA)
-  
+
   set(TestPointRendering_2_ARGS --point-size 1.0)
   list(APPEND cxx_tests TestPointRendering_2,TestPointRendering.cxx,NO_DATA)
-  
+
   set(TestPointRendering_3_ARGS --point-size 3.0)
   list(APPEND cxx_tests TestPointRendering_3,TestPointRendering.cxx,NO_DATA)
-  
+
   set(TestPointRendering_4_ARGS --point-size 7.0)
   list(APPEND cxx_tests TestPointRendering_4,TestPointRendering.cxx,NO_DATA)
-  
+
   set(TestPointRenderingRound_1_ARGS --point-size 0.5 --round)
   list(APPEND cxx_tests TestPointRenderingRound_1,TestPointRendering.cxx,NO_DATA)
-  
+
   set(TestPointRenderingRound_2_ARGS --point-size 1.0 --round)
   list(APPEND cxx_tests TestPointRenderingRound_2,TestPointRendering.cxx,NO_DATA)
-  
+
   set(TestPointRenderingRound_3_ARGS --point-size 3.0 --round)
   list(APPEND cxx_tests TestPointRenderingRound_3,TestPointRendering.cxx,NO_DATA)
-  
+
   set(TestPointRenderingRound_4_ARGS --point-size 7.0 --round)
   list(APPEND cxx_tests TestPointRenderingRound_4,TestPointRendering.cxx,NO_DATA)
-  
+
   set(TestPolyDataMapper2DPointScalarColorMapping_ARGS --point-colors)
   list(APPEND cxx_tests TestPolyDataMapper2DPointScalarColorMapping,TestPolyDataMapper2D.cxx,NO_DATA)
-  
+
   set(TestPolyDataMapper2DCellScalarColorMapping_ARGS --cell-colors)
   list(APPEND cxx_tests TestPolyDataMapper2DCellScalarColorMapping,TestPolyDataMapper2D.cxx,NO_DATA)
-  
+
   set(TestRenderPointsAsSpheresOrthoCamera_ARGS --ortho)
   list(APPEND cxx_tests TestRenderPointsAsSpheresOrthoCamera,TestRenderPointsAsSpheres.cxx,NO_DATA)
-  
+
   set(TestRenderLinesAsTubesOrthoCamera_ARGS --ortho)
   list(APPEND cxx_tests TestRenderLinesAsTubesOrthoCamera,TestRenderLinesAsTubes.cxx,NO_DATA)
-  
+
 if (TARGET VTK::RenderingOpenGL2)
   set(vtk_test_prefix "OpenGL-")
   vtk_add_test_cxx(vtkRenderingCoreCxxTests tests

@@ -9,6 +9,7 @@ vtk_module_test_data(
   Data/chombo3d/,REGEX:.*
   Data/combq.bin
   Data/combxyz.bin
+  Data/dragon.ply
   Data/earth.ppm
   Data/mb_with_pieces/,REGEX:.*\.vtu
   Data/mb_with_pieces.vtm
