@@ -35,6 +35,11 @@ protected:
   vtkXMLMultiBlockDataReader();
   ~vtkXMLMultiBlockDataReader() override;
 
+  // Get the name of the data set being read.
+  const char* GetDataSetName() override;
+
+  int FillOutputPortInformation(int, vtkInformation* info) override;
+
   // Read the XML element for the subtree of a the composite dataset.
   // dataSetIndex is used to rank the leaf nodes in an inorder traversal.
   void ReadComposite(vtkXMLDataElement* element, vtkCompositeDataSet* composite,
@@ -44,19 +49,25 @@ protected:
   virtual void ReadVersion0(vtkXMLDataElement* element, vtkCompositeDataSet* composite,
     const char* filePath, unsigned int& dataSetIndex);
 
-  // Get the name of the data set being read.
-  const char* GetDataSetName() override;
+  void PrepareToCreateMetaData(vtkXMLDataElement* ePrimary) override;
 
-  int FillOutputPortInformation(int, vtkInformation* info) override;
+  /**
+   * Read the meta-data from the Multiblock from the file.
+   */
+  void CreateMetaData(vtkXMLDataElement* ePrimary) override;
 
-  int RequestInformation(vtkInformation*, vtkInformationVector**, vtkInformationVector*) override;
-
-  virtual int FillMetaData(vtkCompositeDataSet* metadata, vtkXMLDataElement* element,
-    const std::string& filePath, unsigned int& dataSetIndex);
+  /**
+   * Recursively synchronize the data array selection of the reader for the file specified in the
+   * XML element.
+   */
+  void SyncCompositeDataArraySelections(vtkCompositeDataSet* composite, vtkXMLDataElement* element,
+    const std::string& filePath) override;
 
 private:
   vtkXMLMultiBlockDataReader(const vtkXMLMultiBlockDataReader&) = delete;
   void operator=(const vtkXMLMultiBlockDataReader&) = delete;
+
+  virtual int FillMetaData(vtkCompositeDataSet* composite, vtkXMLDataElement* element);
 
   bool DistributePiecesInMultiPieces;
 };

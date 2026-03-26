@@ -120,11 +120,9 @@ protected:
    * Given the inorder index for a leaf node, this method tells if the current
    * process should read the dataset.
    *
-   * For a dataset that is part of a vtkParititionedDataSet or a
-   * vtkMultiPieceDataset, valid `pieceIndex` and `numPieces` should be specified such that
-   * `pieceIndex < numPieces`. When provided, this method can use the
-   * `PieceDistribution` selection to distribute each vtkMultiPieceDataset and
-   * vtkParititionedDataSet across ranks.
+   * For a dataset that is part of a vtkPartitionedDataSet valid `pieceIndex` and `numPieces` should
+   * be specified such that `pieceIndex < numPieces`. When provided, this method can use the
+   * `PieceDistribution` selection to distribute each vtkPartitionedDataSet across ranks.
    *
    */
   int ShouldReadDataSet(
@@ -137,7 +135,29 @@ protected:
    */
   static unsigned int CountNestedElements(vtkXMLDataElement* element, const std::string& tagName,
     const std::set<std::string>& exclusions = std::set<std::string>());
+
 #endif
+
+  /**
+   * Prepare to create the meta-data from the composite dataset from the file.
+   * This is called before CreateMetaData.
+   */
+  virtual void PrepareToCreateMetaData(vtkXMLDataElement* vtkNotUsed(ePrimary)) {}
+
+  /**
+   * Create the meta-data from the composite dataset from the file.
+   */
+  virtual void CreateMetaData(vtkXMLDataElement* ePrimary) = 0;
+
+  /**
+   * Recursively synchronize the data array selection of the reader for the file specified in the
+   * XML element.
+   */
+  virtual void SyncCompositeDataArraySelections(
+    vtkCompositeDataSet* composite, vtkXMLDataElement* element, const std::string& filePath) = 0;
+
+  vtkSmartPointer<vtkCompositeDataSet> Metadata;
+
 private:
   vtkXMLCompositeDataReader(const vtkXMLCompositeDataReader&) = delete;
   void operator=(const vtkXMLCompositeDataReader&) = delete;

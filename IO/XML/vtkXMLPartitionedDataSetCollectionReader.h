@@ -22,8 +22,6 @@
 #include "vtkXMLCompositeDataReader.h"
 
 VTK_ABI_NAMESPACE_BEGIN
-class vtkMultiBlockDataSet;
-
 class VTKIOXML_EXPORT vtkXMLPartitionedDataSetCollectionReader : public vtkXMLCompositeDataReader
 {
 public:
@@ -35,7 +33,7 @@ protected:
   vtkXMLPartitionedDataSetCollectionReader();
   ~vtkXMLPartitionedDataSetCollectionReader() override;
 
-  // Read the XML element for the subtree of a the composite dataset.
+  // Read the XML element for the subtree of a composite dataset.
   // dataSetIndex is used to rank the leaf nodes in an inorder traversal.
   void ReadComposite(vtkXMLDataElement* element, vtkCompositeDataSet* composite,
     const char* filePath, unsigned int& dataSetIndex) override;
@@ -44,6 +42,32 @@ protected:
   const char* GetDataSetName() override;
 
   int FillOutputPortInformation(int, vtkInformation* info) override;
+
+  virtual const char* GetXMLPartitionsName() { return "Partitions"; }
+
+  virtual const char* GetXMLPartitionIndexName() { return "index"; }
+
+  /**
+   * Create the meta-data from the partitioned dataset collection from the file.
+   */
+  void CreateMetaData(vtkXMLDataElement* ePrimary) override;
+
+  /**
+   * Recursively synchronize the data array selection of the reader for the file specified in the
+   * XML element.
+   */
+  void SyncCompositeDataArraySelections(vtkCompositeDataSet* composite, vtkXMLDataElement* element,
+    const std::string& filePath) override;
+
+  /**
+   * Given the partition id, this method tells if the partitioned dataset should be read
+   */
+  virtual bool IsPartitionRequested(unsigned int vtkNotUsed(partitionId)) { return true; }
+
+  /**
+   * Given the data object class, return whether it is allowed.
+   */
+  virtual bool CanReadDataObject(vtkDataObject* dataObject);
 
 private:
   vtkXMLPartitionedDataSetCollectionReader(
