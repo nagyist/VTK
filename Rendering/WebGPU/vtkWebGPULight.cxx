@@ -32,7 +32,6 @@ void vtkWebGPULight::CacheLightInformation(vtkRenderer* renderer, vtkCamera* cam
 {
   // Init the cache with right information
   LightInfo& li = this->CachedLightInfo;
-  std::memset(&li.Pad, 0, sizeof(li.Pad));
   li.Type = this->LightType;
   li.Color[0] = { static_cast<vtkTypeFloat32>(this->DiffuseColor[0] * this->Intensity) };
   li.Color[1] = { static_cast<vtkTypeFloat32>(this->DiffuseColor[1] * this->Intensity) };
@@ -44,11 +43,13 @@ void vtkWebGPULight::CacheLightInformation(vtkRenderer* renderer, vtkCamera* cam
   std::memset(&li.PositionVC, 0, sizeof(li.PositionVC));
   std::memset(&li.Attenuation, 0, sizeof(li.Attenuation));
 
-  auto wgpuRenderer = reinterpret_cast<vtkWebGPURenderer*>(renderer);
-  if (wgpuRenderer->GetLightingComplexity() >=
-    vtkWebGPURenderer::LightingComplexityEnum::Directional)
+  // Headlights use the camera direction directly in the shader, so no direction transform needed.
+  // All other light types (camera lights, scene lights) require the view-space direction.
+  // We check the light's own type rather than the renderer's cached LightingComplexity because
+  // the complexity is updated after light->Render() is called, causing a first-frame stale read.
+  if (!this->LightTypeIsHeadlight())
   {
-    // for lightkit case there are some parameters to set
+    auto wgpuRenderer = reinterpret_cast<vtkWebGPURenderer*>(renderer);
     vtkTransform* viewTF = camera->GetModelViewTransformObject();
     // get required info from light
     double* lfp = this->GetTransformedFocalPoint();
@@ -68,17 +69,13 @@ void vtkWebGPULight::CacheLightInformation(vtkRenderer* renderer, vtkCamera* cam
     }
     else
     {
-      // for lightkit case there are some parameters to set
       li.DirectionVC[0] = tDirView[0];
       li.DirectionVC[1] = tDirView[1];
       li.DirectionVC[2] = tDirView[2];
     }
 
-    // we are done unless we have positional lights
-    if (wgpuRenderer->GetLightingComplexity() >=
-      vtkWebGPURenderer::LightingComplexityEnum::Positional)
+    if (this->Positional)
     {
-      // if positional lights pass down more parameters
       double* attn = this->AttenuationValues;
       li.Attenuation[0] = attn[0];
       li.Attenuation[1] = attn[1];
