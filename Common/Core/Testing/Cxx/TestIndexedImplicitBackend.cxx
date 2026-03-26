@@ -150,8 +150,87 @@ int TestWithDataArrayIndexing()
 }
 }
 
+int LoopAndTest(vtkIdList* handles, vtkIntArray* da, int numberOfComponents,
+  vtkIndexedImplicitBackend<int>& backend)
+{
+  for (int idx = 0; idx < handles->GetNumberOfIds() * numberOfComponents; idx++)
+  {
+    if (backend(idx) / numberOfComponents !=
+      static_cast<int>(handles->GetId(idx / numberOfComponents)))
+    {
+      std::cout << "Indexed backend evaluation failed with: " << backend(idx) / numberOfComponents
+                << " != " << handles->GetId(idx / numberOfComponents) << " idx "
+                << idx / numberOfComponents << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+  return EXIT_SUCCESS;
+}
+
+int TestWithMappingTuples()
+{
+  vtkNew<vtkIntArray> baseArray;
+  baseArray->SetNumberOfComponents(1);
+  baseArray->SetNumberOfTuples(100);
+  auto range = vtk::DataArrayValueRange<1>(baseArray);
+  std::iota(range.begin(), range.end(), 0);
+
+  vtkNew<vtkIdList> handles;
+  handles->SetNumberOfIds(100);
+  {
+    std::vector<vtkIdType> buffer(100);
+    std::iota(buffer.begin(), buffer.end(), 0);
+    std::random_device randdev;
+    std::mt19937 generator(randdev());
+    std::shuffle(buffer.begin(), buffer.end(), generator);
+    for (vtkIdType idx = 0; idx < 100; idx++)
+    {
+      handles->SetId(idx, buffer[idx]);
+    }
+  }
+
+  vtkIndexedImplicitBackend<int> backend(handles, baseArray, true);
+
+  int res = LoopAndTest(handles, baseArray, 1, backend);
+
+  vtkNew<vtkIntArray> baseMultiArray;
+  baseMultiArray->SetNumberOfComponents(3);
+  baseMultiArray->SetNumberOfTuples(100);
+  auto multiRange = vtk::DataArrayValueRange<3>(baseMultiArray);
+  std::iota(multiRange.begin(), multiRange.end(), 0);
+
+  vtkNew<vtkIdList> multiHandles;
+  multiHandles->SetNumberOfIds(100);
+  {
+    std::vector<vtkIdType> buffer(100);
+    std::iota(buffer.begin(), buffer.end(), 0);
+    std::random_device randdev;
+    std::mt19937 generator(randdev());
+    std::shuffle(buffer.begin(), buffer.end(), generator);
+    for (vtkIdType idx = 0; idx < 100; idx++)
+    {
+      multiHandles->SetId(idx, buffer[idx] / 3);
+    }
+  }
+
+  vtkIndexedImplicitBackend<int> multiBackend(multiHandles, baseMultiArray, true);
+  return LoopAndTest(multiHandles, baseMultiArray, 3, multiBackend) == EXIT_SUCCESS ? res
+                                                                                    : EXIT_FAILURE;
+}
+
 int TestIndexedImplicitBackend(int, char*[])
 {
-  int res = ::TestWithIDList();
-  return ::TestWithDataArrayIndexing() == EXIT_SUCCESS ? res : EXIT_FAILURE;
+  if (::TestWithIDList() == EXIT_FAILURE)
+  {
+    return EXIT_FAILURE;
+  }
+  if (::TestWithMappingTuples() == EXIT_FAILURE)
+  {
+    return EXIT_FAILURE;
+  }
+  if (::TestWithDataArrayIndexing() == EXIT_FAILURE)
+  {
+    return EXIT_FAILURE;
+  }
+  return EXIT_SUCCESS;
 }
