@@ -104,11 +104,6 @@ void vtkAMRDataObject::Initialize(const std::vector<unsigned int>& blocksPerLeve
 //------------------------------------------------------------------------------
 void vtkAMRDataObject::Initialize(vtkAMRMetaData* metadata)
 {
-  std::vector<unsigned int> blocksPerLevel(metadata->GetNumberOfLevels());
-  for (unsigned int i = 0; i < metadata->GetNumberOfLevels(); i++)
-  {
-    blocksPerLevel.emplace_back(metadata->GetNumberOfBlocks(i));
-  }
   this->SetAMRMetaData(metadata);
   this->InitializeInternal();
 }
@@ -334,9 +329,9 @@ void vtkAMRDataObject::CopyStructure(vtkCompositeDataSet* src)
 
   this->Superclass::CopyStructure(src);
 
-  if (vtkAMRDataObject* hbds = vtkAMRDataObject::SafeDownCast(src))
+  if (vtkAMRDataObject* amr = vtkAMRDataObject::SafeDownCast(src))
   {
-    this->SetAMRMetaData(hbds->GetAMRMetaData());
+    this->SetAMRMetaData(amr->GetAMRMetaData());
   }
 
   this->Modified();
