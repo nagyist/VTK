@@ -86,10 +86,11 @@ public:
 
   ///@{
   /**
-   * Set which indexes from array should be exposed.
+   * Set which indexes from array should be exposed and if we want to map values or tuples.
+   * WARNING: Mapping tuples only works with AOS and doesn't support SOA.
    */
-  void ConstructBackend(vtkIdList* indexes, vtkDataArray* array);
-  void ConstructBackend(vtkDataArray* indexes, vtkDataArray* array);
+  void ConstructBackend(vtkIdList* indexes, vtkDataArray* array, bool mapTuples = false);
+  void ConstructBackend(vtkDataArray* indexes, vtkDataArray* array, bool mapTuples = false);
   ///@}
 
   /**
@@ -101,6 +102,11 @@ public:
    * Get the original index array used for indirection.
    */
   vtkDataArray* GetIndexArray();
+
+  /**
+   * Get the original index array used for indirection.
+   */
+  bool GetMapTuples();
 
 protected:
   vtkIndexedArray() = default;

@@ -128,7 +128,7 @@ struct vtkIndexedImplicitBackend<ValueType>::Internals
   using InternalArrayList = vtkTypeList::Append<vtkArrayDispatch::AllArrays,
     vtkTypeList::Create<vtkImplicitArray<vtkIndexedImplicitBackendDetail::IdListWrapper>>>::Result;
 
-  Internals(vtkIdList* indexes, vtkDataArray* array)
+  Internals(vtkIdList* indexes, vtkDataArray* array, bool mapTuples)
   {
     if (!indexes || !array)
     {
@@ -140,6 +140,10 @@ struct vtkIndexedImplicitBackend<ValueType>::Internals
       std::make_shared<vtkIndexedImplicitBackendDetail::IdListWrapper>(indexes));
     newHandles->SetNumberOfComponents(1);
     newHandles->SetNumberOfTuples(indexes->GetNumberOfIds());
+    // If we map tuples, we need to store the number of components of the base array
+    // Otherwise we map values, so each component will be mapped individually in the
+    // index array
+    this->NumberOfComponents = mapTuples ? array->GetNumberOfComponents() : 1;
     this->Handles = this->TypeCacheArray<vtkIdType>(newHandles);
     this->Array = this->TypeCacheArray<ValueType>(array);
     this->OriginalArray = array;
@@ -154,7 +158,7 @@ struct vtkIndexedImplicitBackend<ValueType>::Internals
     this->OriginalIndexes = idxArray;
   }
 
-  Internals(vtkDataArray* indexes, vtkDataArray* array)
+  Internals(vtkDataArray* indexes, vtkDataArray* array, bool mapTuples)
   {
     if (!indexes || !array)
     {
@@ -167,6 +171,10 @@ struct vtkIndexedImplicitBackend<ValueType>::Internals
         "Passed a vtkDataArray with multiple components as indexing array to vtkIndexedArray");
       return;
     }
+    // If we map tuples, we need to store the number of components of the base array
+    // Otherwise we map values, so each component will be mapped individually in the
+    // index array
+    this->NumberOfComponents = mapTuples ? array->GetNumberOfComponents() : 1;
     this->Handles = this->TypeCacheArray<vtkIdType>(indexes);
     this->Array = this->TypeCacheArray<ValueType>(array);
     this->OriginalArray = array;
@@ -195,23 +203,25 @@ struct vtkIndexedImplicitBackend<ValueType>::Internals
   vtkSmartPointer<vtkImplicitArray<
     vtkIndexedImplicitBackendDetail::TypedCacheWrapper<InternalArrayList, vtkIdType>>>
     Handles;
+
   vtkSmartPointer<vtkDataArray> OriginalArray;
   vtkSmartPointer<vtkDataArray> OriginalIndexes;
+  int NumberOfComponents = 1;
 };
 
 //-----------------------------------------------------------------------
 template <typename ValueType>
 vtkIndexedImplicitBackend<ValueType>::vtkIndexedImplicitBackend(
-  vtkIdList* indexes, vtkDataArray* array)
-  : Internal(std::unique_ptr<Internals>(new Internals(indexes, array)))
+  vtkIdList* indexes, vtkDataArray* array, bool mapTuples)
+  : Internal(std::unique_ptr<Internals>(new Internals(indexes, array, mapTuples)))
 {
 }
 
 //-----------------------------------------------------------------------
 template <typename ValueType>
 vtkIndexedImplicitBackend<ValueType>::vtkIndexedImplicitBackend(
-  vtkDataArray* indexes, vtkDataArray* array)
-  : Internal(std::unique_ptr<Internals>(new Internals(indexes, array)))
+  vtkDataArray* indexes, vtkDataArray* array, bool mapTuples)
+  : Internal(std::unique_ptr<Internals>(new Internals(indexes, array, mapTuples)))
 {
 }
 
@@ -223,9 +233,13 @@ vtkIndexedImplicitBackend<ValueType>::~vtkIndexedImplicitBackend() = default;
 template <typename ValueType>
 ValueType vtkIndexedImplicitBackend<ValueType>::operator()(vtkIdType idx) const
 {
-  return this->Internal->Array->GetValue(this->Internal->Handles->GetValue(idx));
+  const int nComps = this->Internal->NumberOfComponents;
+  const vtkIdType iTup = idx / nComps;
+  const vtkIdType iComp = idx % nComps;
+  return this->Internal->Array->GetValue(this->Internal->Handles->GetValue(iTup) * nComps + iComp);
 }
 
+//-----------------------------------------------------------------------
 template <typename ValueType>
 unsigned long vtkIndexedImplicitBackend<ValueType>::getMemorySize() const
 {
@@ -245,5 +259,12 @@ template <typename ValueType>
 vtkDataArray* vtkIndexedImplicitBackend<ValueType>::GetIndexArray() const
 {
   return this->Internal->OriginalIndexes;
+}
+
+//-----------------------------------------------------------------------
+template <typename ValueType>
+bool vtkIndexedImplicitBackend<ValueType>::GetMapTuples() const
+{
+  return this->Internal->NumberOfComponents != 1;
 }
 VTK_ABI_NAMESPACE_END

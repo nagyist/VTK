@@ -20,16 +20,18 @@ vtkIndexedArray<ValueTypeT>* vtkIndexedArray<ValueTypeT>::New()
 
 //------------------------------------------------------------------------------
 template <class ValueTypeT>
-void vtkIndexedArray<ValueTypeT>::ConstructBackend(vtkIdList* indexes, vtkDataArray* array)
+void vtkIndexedArray<ValueTypeT>::ConstructBackend(
+  vtkIdList* indexes, vtkDataArray* array, bool mapTuples)
 {
-  this->Superclass::ConstructBackend(indexes, array);
+  this->Superclass::ConstructBackend(indexes, array, mapTuples);
 }
 
 //------------------------------------------------------------------------------
 template <class ValueTypeT>
-void vtkIndexedArray<ValueTypeT>::ConstructBackend(vtkDataArray* indexes, vtkDataArray* array)
+void vtkIndexedArray<ValueTypeT>::ConstructBackend(
+  vtkDataArray* indexes, vtkDataArray* array, bool mapTuples)
 {
-  this->Superclass::ConstructBackend(indexes, array);
+  this->Superclass::ConstructBackend(indexes, array, mapTuples);
 }
 
 //------------------------------------------------------------------------------
@@ -46,6 +48,14 @@ vtkDataArray* vtkIndexedArray<ValueTypeT>::GetIndexArray()
 {
   auto backend = this->GetBackend();
   return backend ? backend->GetIndexArray() : nullptr;
+}
+
+//------------------------------------------------------------------------------
+template <class ValueTypeT>
+bool vtkIndexedArray<ValueTypeT>::GetMapTuples()
+{
+  auto backend = this->GetBackend();
+  return backend ? backend->GetMapTuples() : false;
 }
 
 VTK_ABI_NAMESPACE_END
