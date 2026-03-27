@@ -13,13 +13,15 @@
 #ifndef vtkHierarchicalDataExtractDataSets_h
 #define vtkHierarchicalDataExtractDataSets_h
 
+#include "vtkDeprecation.h" // for VTK_DEPRECATED_IN_9_7_0
 #include "vtkExtractDataSets.h"
 #include "vtkFiltersExtractionModule.h" // For export macro
 
 VTK_ABI_NAMESPACE_BEGIN
 struct vtkHierarchicalDataExtractDataSetsInternals;
 
-class VTKFILTERSEXTRACTION_EXPORT vtkHierarchicalDataExtractDataSets : public vtkExtractDataSets
+class VTK_DEPRECATED_IN_9_7_0("Use vtkHierarchicalDataExtractDataSets")
+  VTKFILTERSEXTRACTION_EXPORT vtkHierarchicalDataExtractDataSets : public vtkExtractDataSets
 {
 public:
   vtkTypeMacro(vtkHierarchicalDataExtractDataSets, vtkExtractDataSets);
