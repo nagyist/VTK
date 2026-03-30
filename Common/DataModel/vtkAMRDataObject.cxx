@@ -48,7 +48,7 @@ vtkCartesianGrid* vtkAMRDataObject::GetDataSetAsCartesianGrid(unsigned int level
     return nullptr;
   }
 
-  return vtkCartesianGrid::SafeDownCast(this->GetPartition(level, idx));
+  return vtkCartesianGrid::SafeDownCast(this->Superclass::GetPartition(level, idx));
 }
 
 //------------------------------------------------------------------------------
@@ -56,6 +56,12 @@ vtkImageData* vtkAMRDataObject::GetDataSetAsImageData(unsigned int level, unsign
 {
   return vtkImageData::SafeDownCast(this->GetDataSetAsCartesianGrid(level, idx));
 };
+
+//------------------------------------------------------------------------------
+vtkDataSet* vtkAMRDataObject::GetPartition(unsigned int level, unsigned int idx)
+{
+  return this->GetDataSetAsCartesianGrid(level, idx);
+}
 
 //------------------------------------------------------------------------------
 vtkRectilinearGrid* vtkAMRDataObject::GetDataSetAsRectilinearGrid(
@@ -128,7 +134,7 @@ void vtkAMRDataObject::InitializeInternal()
     this->SetNumberOfPartitions(level, nBlocks);
     for (unsigned int block = 0; block < nBlocks; block++)
     {
-      this->SetPartition(level, block, nullptr);
+      this->Superclass::SetPartition(level, block, nullptr);
     }
   }
 }
@@ -206,7 +212,13 @@ void vtkAMRDataObject::SetDataSet(unsigned int level, unsigned int idx, vtkDataS
     this->Bounds[i * 2 + 1] = std::max(bb[i * 2 + 1], this->Bounds[i * 2 + 1]);
   } // END for each dimension
 
-  this->SetPartition(level, idx, grid);
+  this->Superclass::SetPartition(level, idx, grid);
+}
+
+//------------------------------------------------------------------------------
+void vtkAMRDataObject::SetPartition(unsigned int idx, unsigned int partition, vtkDataObject* object)
+{
+  this->SetDataSet(idx, partition, vtkDataSet::SafeDownCast(object));
 }
 
 //------------------------------------------------------------------------------

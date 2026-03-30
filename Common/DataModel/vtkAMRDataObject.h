@@ -244,6 +244,14 @@ public:
   void SetAMRMetaData(vtkAMRMetaData* metadata);
   ///@}
 
+  ///@{
+  /**
+   * Overrides that call SetDataSet and GetDataSetAsCartesianGrid under the hood.
+   */
+  void SetPartition(unsigned int idx, unsigned int partition, vtkDataObject* object) override;
+  vtkDataSet* GetPartition(unsigned int idx, unsigned int partition) override;
+  ///@}
+
 protected:
   vtkAMRDataObject();
   ~vtkAMRDataObject() override;
