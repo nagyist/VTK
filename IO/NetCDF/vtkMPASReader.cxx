@@ -1173,60 +1173,50 @@ int vtkMPASReader::RequestData(vtkInformation* vtkNotUsed(reqInfo),
   output->GetInformation()->Set(vtkDataObject::DATA_TIME_STEP(), this->DTime);
 
   // Examine each variable to see if it is selected
-  int numPointVars = static_cast<int>(this->Internals->pointVars.size());
+  const auto& pointVars =
+    this->UsePrimaryGrid ? this->Internals->cellVars : this->Internals->pointVars;
+  const auto& pointSelection =
+    this->UsePrimaryGrid ? this->CellDataArraySelection : this->PointDataArraySelection;
+  int numPointVars = static_cast<int>(pointVars.size());
   for (int var = 0; var < numPointVars; var++)
   {
     // Is this variable requested
-    if (this->PointDataArraySelection->GetArraySetting(var))
+    if (pointSelection->GetArraySetting(var))
     {
       vtkDataArray* array = this->LoadPointVarData(state, var);
       if (!array)
       {
         char name[NC_MAX_NAME + 1];
-        if (!this->Internals->nc_err(
-              nc_inq_varname(this->Internals->ncFile, this->Internals->pointVars[var], name)))
+        if (!this->Internals->nc_err(nc_inq_varname(this->Internals->ncFile, pointVars[var], name)))
         {
           vtkWarningMacro(<< "Error loading point variable '" << name << "'.");
         }
         continue;
       }
-      if (this->UsePrimaryGrid)
-      {
-        // Primary grid reverses point/cell semantics.
-        output->GetCellData()->AddArray(array);
-      }
-      else
-      {
-        output->GetPointData()->AddArray(array);
-      }
+      output->GetPointData()->AddArray(array);
     }
   }
 
-  int numCellVars = static_cast<int>(this->Internals->cellVars.size());
+  const auto& cellVars =
+    this->UsePrimaryGrid ? this->Internals->pointVars : this->Internals->cellVars;
+  const auto& cellSelection =
+    this->UsePrimaryGrid ? this->PointDataArraySelection : this->CellDataArraySelection;
+  int numCellVars = static_cast<int>(cellVars.size());
   for (int var = 0; var < numCellVars; var++)
   {
-    if (this->CellDataArraySelection->GetArraySetting(var))
+    if (cellSelection->GetArraySetting(var))
     {
       vtkDataArray* array = this->LoadCellVarData(state, var);
       if (!array)
       {
         char name[NC_MAX_NAME + 1];
-        if (!this->Internals->nc_err(
-              nc_inq_varname(this->Internals->ncFile, this->Internals->pointVars[var], name)))
+        if (!this->Internals->nc_err(nc_inq_varname(this->Internals->ncFile, cellVars[var], name)))
         {
-          vtkWarningMacro(<< "Error loading point variable '" << name << "'.");
+          vtkWarningMacro(<< "Error loading cell variable '" << name << "'.");
         }
         continue;
       }
-      if (this->UsePrimaryGrid)
-      {
-        // Primary grid reverses point/cell semantics.
-        output->GetPointData()->AddArray(array);
-      }
-      else
-      {
-        output->GetCellData()->AddArray(array);
-      }
+      output->GetCellData()->AddArray(array);
     }
   }
 
@@ -1878,10 +1868,8 @@ int vtkMPASReader::AllocSphericalPrimaryGeometry(LoadState& state)
     {
       return 0;
     }
-    const size_t start_pt[] = { 0 };
-    const size_t count_pt[] = { this->NumberOfPoints };
     if (this->Internals->nc_err(nc_get_vara_int(this->Internals->ncFile, maxLevelPerCellId,
-          start_pt, count_pt, state.MaximumLevelPoint + this->PointOffset)))
+          start_cell, count_cell, state.MaximumLevelPoint + this->CellOffset)))
     {
       return 0;
     }
@@ -1986,7 +1974,7 @@ int vtkMPASReader::AllocProjectedDualGeometry(LoadState& state)
   {
     this->IncludeTopography = true;
     assert(state.MaximumLevelPoint == nullptr);
-    state.MaximumLevelPoint = new int[this->NumberOfPoints + this->NumberOfPoints];
+    state.MaximumLevelPoint = new int[this->NumberOfPoints + this->PointOffset];
     if (!this->Internals->ValidateDimensions(varid, false, 1, "nCells"))
     {
       return 0;
@@ -2123,7 +2111,7 @@ int vtkMPASReader::AllocProjectedPrimaryGeometry(LoadState& state)
       return 0;
     }
     if (this->Internals->nc_err(nc_get_vara_int(this->Internals->ncFile, maxLevelPerCellId,
-          start_pt, count_pt, state.MaximumLevelPoint + this->PointOffset)))
+          start_cell, count_cell, state.MaximumLevelPoint + this->CellOffset)))
     {
       return 0;
     }
@@ -2907,7 +2895,8 @@ void vtkMPASReader::OutputCells(LoadState& state)
 //------------------------------------------------------------------------------
 vtkDataArray* vtkMPASReader::LoadPointVarData(LoadState& state, int variableIndex)
 {
-  int varid = this->Internals->pointVars[variableIndex];
+  int varid = this->UsePrimaryGrid ? this->Internals->cellVars[variableIndex]
+                                   : this->Internals->pointVars[variableIndex];
   char varname[NC_MAX_NAME + 1];
   if (this->Internals->nc_err(nc_inq_varname(this->Internals->ncFile, varid, varname)))
   {
@@ -2935,16 +2924,8 @@ vtkDataArray* vtkMPASReader::LoadPointVarData(LoadState& state, int variableInde
   array->SetName(varname);
 
   int success = false;
-  if (!this->UsePrimaryGrid)
-  {
-    success = MPASDispatcher::Execute(
-      array, *this->Internals, state, varid, vtkMPASReader::Internal::Point{});
-  }
-  else
-  {
-    success = MPASDispatcher::Execute(
-      array, *this->Internals, state, varid, vtkMPASReader::Internal::Cell{});
-  }
+  success = MPASDispatcher::Execute(
+    array, *this->Internals, state, varid, vtkMPASReader::Internal::Point{});
   if (!success)
   {
     vtkErrorMacro(<< "Unsupported data type for variable: " << varname);
@@ -2965,7 +2946,8 @@ vtkDataArray* vtkMPASReader::LoadPointVarData(LoadState& state, int variableInde
 
 vtkDataArray* vtkMPASReader::LoadCellVarData(LoadState& state, int variableIndex)
 {
-  int varid = this->Internals->cellVars[variableIndex];
+  int varid = this->UsePrimaryGrid ? this->Internals->pointVars[variableIndex]
+                                   : this->Internals->cellVars[variableIndex];
   char varname[NC_MAX_NAME + 1];
   if (this->Internals->nc_err(nc_inq_varname(this->Internals->ncFile, varid, varname)))
   {
@@ -2993,22 +2975,15 @@ vtkDataArray* vtkMPASReader::LoadCellVarData(LoadState& state, int variableIndex
   array->SetName(varname);
 
   int success = false;
-  if (!this->UsePrimaryGrid)
-  {
-    success = MPASDispatcher::Execute(
-      array, *this->Internals, state, varid, vtkMPASReader::Internal::Cell{});
-  }
-  else
-  {
-    success = MPASDispatcher::Execute(
-      array, *this->Internals, state, varid, vtkMPASReader::Internal::Point{});
-  }
+  success =
+    MPASDispatcher::Execute(array, *this->Internals, state, varid, vtkMPASReader::Internal::Cell{});
 
   if (!success)
   {
     vtkErrorMacro(<< "Unsupported data type for variable: " << varname);
     return nullptr;
   }
+
   if (this->Internals->CellResult)
   {
     this->Internals->cellArrays[variableIndex] = array;
