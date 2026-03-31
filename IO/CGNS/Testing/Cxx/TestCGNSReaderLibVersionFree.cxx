@@ -7,6 +7,7 @@
 #include "vtkNew.h"
 #include "vtkTestUtilities.h"
 #include "vtkUnstructuredGrid.h"
+#include <vtksys/SystemTools.hxx>
 
 #include <iostream>
 
@@ -117,8 +118,18 @@ ModifyError:
 int TestCGNSReaderLibVersionFree(int argc, char* argv[])
 {
   char* fname = vtkTestUtilities::ExpandDataFileName(argc, argv, "Data/test_cylinder.cgns");
-  std::string upgradedFile = fname ? fname : "";
+  std::string originalFile = fname ? fname : "";
   delete[] fname;
+
+  std::string tempDir =
+    vtkTestUtilities::GetArgOrEnvOrDefault("-T", argc, argv, "VTK_TEMP_DIR", "Testing/Temporary");
+  std::string upgradedFile(tempDir + "/TestUpgrade.cgns");
+
+  if (!vtksys::SystemTools::CopyAFile(originalFile, upgradedFile, true))
+  {
+    std::cerr << "Failed CopyAFile for testing" << std::endl;
+    return EXIT_FAILURE;
+  }
 
   if (::ModifyCGNSLibVersion(upgradedFile))
   {
