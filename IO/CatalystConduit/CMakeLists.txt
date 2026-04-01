@@ -17,7 +17,7 @@ vtk_module_add_module(VTK::IOCatalystConduit
   PRIVATE_CLASSES ${private_classes})
 
 
-if (TARGET viskores::cuda)
+if (TARGET VTK::vtkviskores_cuda)
   # Temporarily suppress "has address taken but no possible call to it" warnings,
   # until we figure out its implications.
   # We are disabling all warnings as nvlink has no known way to suppress

@@ -6,7 +6,7 @@ vtk_add_test_cxx(vtkAcceleratorsVTKmCoreCxxTests tests
   TestVTKMImplicitDataArray.cxx,NO_VALID
   )
 
-if (TARGET viskores::cuda OR TARGET viskores::kokkos_cuda)
+if (TARGET VTK::vtkviskores_cuda OR TARGET VTK::vtkviskores_kokkos_cuda)
   foreach(src IN LISTS tests)
     string(REPLACE "," ";" src ${src})
     list(GET src 0 src)
@@ -27,7 +27,7 @@ endif()
 
 vtk_test_cxx_executable(vtkAcceleratorsVTKmCoreCxxTests tests)
 
-if (TARGET viskores::cuda)
+if (TARGET VTK::vtkviskores_cuda)
   # When cuda is enabled VTK::AcceleratorsVTKmCore is built statically but with fpic
   # enabled so the tests are also built with fpic enabled
   set_target_properties(vtkAcceleratorsVTKmCoreCxxTests PROPERTIES

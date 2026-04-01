@@ -28,7 +28,7 @@ vtk_add_test_cxx(vtkAcceleratorsVTKmFiltersCxxTests tests
   TestVTKMWarpVector.cxx,NO_SERDES
   )
 
-if (TARGET viskores::cuda)
+if (TARGET VTK::vtkviskores_cuda)
   foreach(src IN LISTS tests)
     string(REPLACE "," ";" src ${src})
     list(GET src 0 src)
@@ -53,7 +53,7 @@ vtk_test_cxx_executable(vtkAcceleratorsVTKmFiltersCxxTests tests
   RENDERING_FACTORY
   )
 
-if (TARGET viskores::cuda)
+if (TARGET VTK::vtkviskores_cuda)
   set_target_properties(vtkAcceleratorsVTKmFiltersCxxTests PROPERTIES
     CUDA_ARCHITECTURES OFF)
 endif()
