@@ -36,7 +36,7 @@ class VTKIndexedArray(VTKDataArrayMixin):
     """
 
     # ---- construction -------------------------------------------------------
-    def __init__(self, indexes=None, array=None, **kwargs):
+    def __init__(self, indexes=None, array=None, mapTuples=False, **kwargs):
         """Create an indexed array.
 
         Parameters
@@ -59,7 +59,7 @@ class VTKIndexedArray(VTKDataArrayMixin):
             ntuples = indexes.GetNumberOfTuples()
             self.SetNumberOfComponents(ncomps)
             self.SetNumberOfTuples(ntuples)
-            self.ConstructBackend(indexes, array)
+            self.ConstructBackend(indexes, array, mapTuples)
 
     # ---- accessor properties ------------------------------------------------
     @property
@@ -98,12 +98,17 @@ class VTKIndexedArray(VTKDataArrayMixin):
             return numpy.empty(shape, dtype=dt)
 
         base_np = numpy.asarray(base).ravel()
-        index_np = numpy.asarray(indexes).ravel().astype(numpy.intp)
+        nc = self.GetNumberOfComponents()
+
+        # Flatten indexes if needed
+        if(self.GetMapTuples()):
+            index_np = (numpy.asarray(indexes).reshape(-1, 1) * nc + numpy.arange(nc)).reshape(-1)
+        else:
+            index_np = numpy.asarray(indexes).ravel().astype(numpy.intp)
 
         # Indexes are value-level (flat), so index into flattened base
         result = base_np[index_np]
 
-        nc = self.GetNumberOfComponents()
         if nc > 1:
             result = result.reshape(-1, nc)
 
