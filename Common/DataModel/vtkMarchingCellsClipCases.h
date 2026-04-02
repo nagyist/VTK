@@ -13,7 +13,7 @@
 #include <cstdint>
 
 VTK_ABI_NAMESPACE_BEGIN
-class VTKCOMMONDATAMODEL_EXPORT vtkMarchingCellsClipCasesBase
+class vtkMarchingCellsClipCasesBase
 {
 public:
   // Points of original cell (up to 8, for the hex)
@@ -157,11 +157,11 @@ public:
 
 // Primary template declaration
 template <bool InsideOut>
-class VTKCOMMONDATAMODEL_EXPORT vtkMarchingCellsClipCases;
+class vtkMarchingCellsClipCases;
 
 // Specialization for false
 template <>
-class VTKCOMMONDATAMODEL_EXPORT vtkMarchingCellsClipCases<false> : public vtkMarchingCellsClipCasesBase
+class vtkMarchingCellsClipCases<false> : public vtkMarchingCellsClipCasesBase
 {
 public:
   static constexpr uint8_t DISCARDED_CELL_CASE = 0;
@@ -4822,7 +4822,7 @@ public:
 
 // Specialization for true
 template <>
-class VTKCOMMONDATAMODEL_EXPORT vtkMarchingCellsClipCases<true> : public vtkMarchingCellsClipCasesBase
+class vtkMarchingCellsClipCases<true> : public vtkMarchingCellsClipCasesBase
 {
 public:
   static constexpr uint8_t DISCARDED_CELL_CASE = 255;
