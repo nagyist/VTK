@@ -59,6 +59,15 @@ class vtkCompositeDataSet;
  *
  * When using vtkCompositeDataSet, every leaves should be of a supported
  * data set type.
+ *
+ * @warning usage with vtkCompositeDataPipeline
+ * The vtkCompositeDataPipeline updates the filter for each block.
+ * The filter cannot differentiate an update for a new block from an
+ * update with a new input. Trying to use the vtkDataObjectMeshCache in this context
+ * leads to cache invalidation at each call, because each block is considered as a new dataset.
+ * To properly setup vtkDataObjectMeshCache in a filter, vtkCompositeDataSet should
+ * be explicitly handled, so each RequestData can actually be interpreted as
+ * a new input data to process.
  */
 class VTKFILTERSTEMPORAL_EXPORT vtkDataObjectMeshCache : public vtkObject
 {
