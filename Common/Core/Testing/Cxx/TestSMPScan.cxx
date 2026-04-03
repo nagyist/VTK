@@ -24,13 +24,7 @@ struct SMPScanRandomValues
 int TestSMPScan(int argc, char* argv[])
 {
   // Some default values
-  int NVals = 10000;
-
-  // Process command line arguments
-  if (argc > 1)
-  {
-    NVals = std::stoi(argv[1]);
-  }
+  int NVals = 20000;
 
   // Create an array in which inplace prefix sum will be computed.
   vtkNew<vtkIdTypeArray> offsets;
