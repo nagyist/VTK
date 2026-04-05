@@ -86,6 +86,10 @@ DEFINE_POINTER_TO_FUNCTION(vtkXRootWindow);
 DEFINE_POINTER_TO_FUNCTION(vtkXGetVisualInfo);
 DEFINE_POINTER_TO_FUNCTION(vtkXMatchVisualInfo);
 DEFINE_POINTER_TO_FUNCTION(vtkXGetErrorText);
+DEFINE_POINTER_TO_FUNCTION(vtkXClearWindow);
+DEFINE_POINTER_TO_FUNCTION(vtkXFreeColormap);
+DEFINE_POINTER_TO_FUNCTION(vtkXMapRaised);
+DEFINE_POINTER_TO_FUNCTION(vtkXWindowEvent);
 
 // Xcursor API
 #if VTK_HAVE_XCURSOR
@@ -185,6 +189,10 @@ extern "C"
       LOAD_POINTER_TO_FUNCTION(libX11, XGetVisualInfo, vtkXGetVisualInfo);
       LOAD_POINTER_TO_FUNCTION(libX11, XMatchVisualInfo, vtkXMatchVisualInfo);
       LOAD_POINTER_TO_FUNCTION(libX11, XGetErrorText, vtkXGetErrorText);
+      LOAD_POINTER_TO_FUNCTION(libX11, XClearWindow, vtkXClearWindow);
+      LOAD_POINTER_TO_FUNCTION(libX11, XFreeColormap, vtkXFreeColormap);
+      LOAD_POINTER_TO_FUNCTION(libX11, XMapRaised, vtkXMapRaised);
+      LOAD_POINTER_TO_FUNCTION(libX11, XWindowEvent, vtkXWindowEvent);
 #if VTK_HAVE_XCURSOR
       for (const char** libName = XCURSOR_LIBRARY_NAMES; *libName != nullptr; ++libName)
       {
@@ -274,6 +282,10 @@ extern "C"
       NULLIFY_POINTER_TO_FUNCTION(vtkXGetVisualInfo);
       NULLIFY_POINTER_TO_FUNCTION(vtkXMatchVisualInfo);
       NULLIFY_POINTER_TO_FUNCTION(vtkXGetErrorText);
+      NULLIFY_POINTER_TO_FUNCTION(vtkXClearWindow);
+      NULLIFY_POINTER_TO_FUNCTION(vtkXFreeColormap);
+      NULLIFY_POINTER_TO_FUNCTION(vtkXMapRaised);
+      NULLIFY_POINTER_TO_FUNCTION(vtkXWindowEvent);
 
 // Xcursor API
 #if VTK_HAVE_XCURSOR
