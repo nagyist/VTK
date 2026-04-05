@@ -650,7 +650,11 @@ public:
 // std::exclusive_scan become stable, and universally support parallel
 // implementations. Further, this implementation has the benefit that it
 // performs the scan operation in-place, not all backends (at this time)
-// efficiently support in-place scans.
+// efficiently support in-place scans. (TODO: currently GCC does not perform
+// in-place scan correctly [this is a known bug, fixed in GCC versions 14.3
+// and 13.4 see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108236].
+// Eventually, the sequential loops that follow below should be replaced with
+// std::exclusive_scan().)
 template <typename RandomAccessIterator, typename ValueType>
 ValueType vtkSMPTools::ExclusiveScan(
   RandomAccessIterator begin, RandomAccessIterator end, ValueType init)
@@ -710,10 +714,7 @@ ValueType vtkSMPTools::ExclusiveScan(
 
     // Perform a sequential, in-place prefix sum across each batch to create
     // the batch offsets. The initial value of the scan, init, is added in
-    // here. TODO: currently GCC does not perform in-place scan correctly
-    // (this is a known bug, fixed in GCC versions 14.3 and 13.4 see
-    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108236).  Eventually,
-    // this loop should be replaced with std::exclusive_scan().
+    // here.
     ValueType val, count = init;
     for (int batchNum = 0; batchNum < numBatches; ++batchNum)
     {
