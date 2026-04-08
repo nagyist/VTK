@@ -14,7 +14,6 @@ if (TARGET VTK::ParallelMPI)
     DistributedData.cxx
     DistributedDataRenderPass.cxx
     PTextureMapToSphere.cxx
-    TestPHyperTreeGridGradient.cxx,NO_VALID
     TestPHyperTreeGridProbeFilter.cxx
     TestPExtractDataArraysOverTime.cxx,NO_VALID
     TestPartitionBalancer.cxx,NO_VALID
@@ -45,12 +44,19 @@ if (TARGET VTK::ParallelMPI)
     TestHyperTreeGridGhostCellsGenerator.cxx,NO_VALID
   )
 
+  if (TARGET VTK::FiltersParallelMPI)
+    set(vtkFiltersParallelCxxTests-MPI_NUMPROCS 2)
+    vtk_add_test_mpi(vtkFiltersParallelCxxTests-MPI parallel_mpi_tests
+        TestPHyperTreeGridGradient.cxx,NO_VALID
+      )
+  endif()
 
   set(all_tests
     ${tests}
     ${no_data_tests}
     ${no_data_tests_4_procs}
     ${tests_4_procs}
+    ${parallel_mpi_tests}
     )
   vtk_test_cxx_executable(vtkFiltersParallelCxxTests-MPI all_tests)
 endif()
