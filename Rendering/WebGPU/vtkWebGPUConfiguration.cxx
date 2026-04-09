@@ -813,7 +813,7 @@ bool vtkWebGPUConfiguration::IsSamsungGPUInUse()
 }
 
 //------------------------------------------------------------------------------
-wgpu::Buffer vtkWebGPUConfiguration::CreateBuffer(unsigned long sizeBytes, wgpu::BufferUsage usage,
+wgpu::Buffer vtkWebGPUConfiguration::CreateBuffer(std::uint64_t sizeBytes, wgpu::BufferUsage usage,
   bool mappedAtCreation /*=false*/, const char* label /*=nullptr*/)
 {
   auto& internals = (*this->Internals);
@@ -859,8 +859,8 @@ wgpu::Buffer vtkWebGPUConfiguration::CreateBuffer(const wgpu::BufferDescriptor& 
 }
 
 //------------------------------------------------------------------------------
-void vtkWebGPUConfiguration::WriteBuffer(const wgpu::Buffer& buffer, unsigned long offset,
-  const void* data, unsigned long sizeBytes, const char* description /*= nullptr*/)
+void vtkWebGPUConfiguration::WriteBuffer(const wgpu::Buffer& buffer, std::uint64_t offset,
+  const void* data, std::size_t sizeBytes, const char* description /*= nullptr*/)
 {
   auto& internals = (*this->Internals);
   if (!internals.DeviceReady)
