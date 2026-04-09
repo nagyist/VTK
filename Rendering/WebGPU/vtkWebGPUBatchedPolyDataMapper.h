@@ -75,11 +75,6 @@ protected:
   std::map<std::uintptr_t, std::unique_ptr<BatchElement>> VTKPolyDataToBatchElement;
   std::map<unsigned int, std::uintptr_t> FlatIndexToPolyData;
 
-  // Upload timestamp of override colors.
-  vtkTimeStamp OverrideColorUploadTimestamp;
-  bool LastBlockVisibility = true;
-  bool LastUseNanColor = false;
-
   struct CompositeDataProperties
   {
     vtkTypeUInt32 ApplyOverrideColors = 0;
@@ -87,17 +82,74 @@ protected:
     vtkTypeUInt32 CompositeId = 0;
     vtkTypeUInt32 Pickable = 1;
     vtkTypeFloat32 Ambient[3] = {};
-    vtkTypeUInt32 Pad = 0;
+    vtkTypeUInt32 CellIdOffsetForVerts = 0;
     vtkTypeFloat32 Diffuse[3] = {};
+    vtkTypeUInt32 CellIdOffsetForLines = 0;
+    vtkTypeUInt32 CellIdOffsetForPolys = 0;
+    vtkTypeUInt32 CellIdOffsetForSelector = 0;
   };
-  wgpu::Buffer CompositeDataPropertiesBuffer;
+  struct StorageBuffer
+  {
+    wgpu::Buffer Buffer;
+    std::uint64_t Size = 0;
+    std::uint32_t BindingSize = 0;
+  };
+  StorageBuffer CompositeDataPropertyStorage;
+  vtkTimeStamp ResourcesSyncTimeStamp;
 
+  /**
+   * Override to detect changes in the polydata batch.
+   */
+  bool ShouldReleaseGraphicsResourcesOnSync() override;
+
+  /**
+   * Override to ensure batch is not empty.
+   */
+  bool EnsureInput() override;
+
+  /**
+   * Override to call super class for each polydata in batch.
+   */
+  void DeducePointCellAttributeAvailability() override;
+
+  ///@{
+  /**
+   * Override to upload all the polydata from the batch.
+   */
+  void UpdateMeshGeometryBuffers(vtkWebGPUConfiguration* wgpuConfiguration) override;
+  void UpdateMeshTopologyBuffers(
+    vtkWebGPUConfiguration* wgpuConfiguration, vtkProperty* displayProperty) override;
+  ///@}
+
+  ///@{
+  /**
+   * Override to accumulate the sizes of the given `attribute` from all
+   * the polydata in the batch.
+   */
+  unsigned long GetPointAttributeByteSize(
+    vtkWebGPUPolyDataMapper::PointDataAttributes attribute) override;
+  unsigned long GetCellAttributeByteSize(
+    vtkWebGPUPolyDataMapper::CellDataAttributes attribute) override;
+  ///@}
+
+  ///@{
+  /**
+   * Override to add another binding for CompositeDataPropertyStorage
+   */
   std::vector<wgpu::BindGroupLayoutEntry> GetMeshBindGroupLayoutEntries() override;
   std::vector<wgpu::BindGroupEntry> GetMeshBindGroupEntries() override;
+  ///@}
 
-  void UploadCompositeDataProperties(vtkSmartPointer<vtkWebGPUConfiguration> wgpuConfiguration,
-    bool applyOverrides, double overrideOpacity, const vtkColor3d& overrideAmbientColor,
-    const vtkColor3d& overrideDiffuseColor, vtkTypeUInt32 compositeId, bool pickable);
+  ///@{
+  /**
+   * Override to customize bindings when homogeneousCellSize=true
+   */
+  std::vector<wgpu::BindGroupLayoutEntry> GetTopologyBindGroupLayoutEntries(
+    bool homogeneousCellSize, bool useEdgeArray) override;
+  std::vector<wgpu::BindGroupEntry> GetTopologyBindGroupEntries(
+    vtkWebGPUCellToPrimitiveConverter::TopologySourceType topologySourceType,
+    bool homogeneousCellSize, bool useEdgeArray) override;
+  ///@}
 
   void ReplaceShaderCustomDef(GraphicsPipelineType pipelineType, vtkWebGPURenderer* wgpuRenderer,
     vtkWebGPUActor* wgpuActor, std::string& vss, std::string& fss) override;
@@ -105,6 +157,8 @@ protected:
     vtkWebGPURenderer* wgpuRenderer, vtkWebGPUActor* wgpuActor, std::string& vss,
     std::string& fss) override;
 
+  void ReplaceVertexShaderCellId(GraphicsPipelineType pipelineType, vtkWebGPURenderer* renderer,
+    vtkWebGPUActor* actor, std::string& vss) override;
   void ReplaceVertexShaderPicking(GraphicsPipelineType pipelineType,
     vtkWebGPURenderer* wgpuRenderer, vtkWebGPUActor* wgpuActor, std::string& vss) override;
 
@@ -113,9 +167,27 @@ protected:
   void ReplaceFragmentShaderPicking(GraphicsPipelineType pipelineType,
     vtkWebGPURenderer* wgpuRenderer, vtkWebGPUActor* wgpuActor, std::string& fss) override;
 
+  ///@{
+  /**
+   * Override to return the correct vertex offset and vertex count for the mesh currently being
+   * drawn within our batch.
+   */
+  DrawCallArgs GetDrawCallArgs(GraphicsPipelineType pipelineType,
+    vtkWebGPUCellToPrimitiveConverter::TopologySourceType topologySourceType) override;
+  DrawCallArgs GetDrawCallArgsForDrawingVertices(
+    vtkWebGPUCellToPrimitiveConverter::TopologySourceType topologySourceType) override;
+  ///@}
+
+  int CanUseTextureMapForColoring(vtkDataObject*) override;
+
 private:
   vtkWebGPUBatchedPolyDataMapper(const vtkWebGPUBatchedPolyDataMapper&) = delete;
   void operator=(const vtkWebGPUBatchedPolyDataMapper&) = delete;
+
+  std::size_t CurrentDrawMeshId = 0; // 0 <= CurrentDrawMeshId < BatchSize
+  std::uint32_t MinStorageBufferOffsetAlignment = 0;
+
+  bool AllocateCompositeDataPropertyStorageBuffer(vtkWebGPUConfiguration* wgpuConfiguration);
 };
 
 VTK_ABI_NAMESPACE_END

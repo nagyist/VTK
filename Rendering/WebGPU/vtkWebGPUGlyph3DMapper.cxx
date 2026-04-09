@@ -843,8 +843,9 @@ const TRIANGLE_VERTS = array(
         if (pipelineType == GFX_PIPELINE_POINTS ||
           pipelineType == GFX_PIPELINE_POINTS_HOMOGENEOUS_CELL_SIZE)
         {
-          return { /*vertexCount=*/bgInfo.VertexCount,
-            /*instanceCount=*/this->NumberOfGlyphPoints };
+          return { /*VertexOffset=*/0, /*VertexCount=*/bgInfo.VertexCount,
+            /*InstanceOffset=*/0,
+            /*InstanceCount=*/this->NumberOfGlyphPoints };
         }
         if (pipelineType == GFX_PIPELINE_POINTS_SHAPED ||
           pipelineType == GFX_PIPELINE_POINTS_SHAPED_HOMOGENEOUS_CELL_SIZE)
@@ -852,8 +853,8 @@ const TRIANGLE_VERTS = array(
           // ReplaceShaderConstantsDef declares a quad with two triangles
           // when pipeline is specialized for shaped points.
           // total 6 imposter vertices
-          return { /*vertexCount=*/6 * bgInfo.VertexCount,
-            /*instanceCount=*/this->NumberOfGlyphPoints };
+          return { /*VertexOffset=*/0, /*VertexCount=*/6 * bgInfo.VertexCount,
+            /*InstanceOffset=*/0, /*InstanceCount=*/this->NumberOfGlyphPoints };
         }
         break;
       case vtkWebGPUCellToPrimitiveConverter::TOPOLOGY_SOURCE_LINES:
@@ -861,8 +862,8 @@ const TRIANGLE_VERTS = array(
         if (pipelineType == GFX_PIPELINE_LINES ||
           pipelineType == GFX_PIPELINE_LINES_HOMOGENEOUS_CELL_SIZE)
         {
-          return { /*vertexCount=*/bgInfo.VertexCount,
-            /*instanceCount=*/this->NumberOfGlyphPoints };
+          return { /*VertexOffset=*/0, /*VertexCount=*/bgInfo.VertexCount,
+            /*InstanceOffset=*/0, /*InstanceCount=*/this->NumberOfGlyphPoints };
         }
         // ReplaceShaderConstantsDef declares a quad with two triangles
         // when pipeline is specialized for thick lines and miter joined lines.
@@ -872,25 +873,26 @@ const TRIANGLE_VERTS = array(
         if (pipelineType == GFX_PIPELINE_LINES_THICK ||
           pipelineType == GFX_PIPELINE_LINES_THICK_HOMOGENEOUS_CELL_SIZE)
         {
-          return { /*vertexCount=*/3 * bgInfo.VertexCount,
-            /*instanceCount=*/this->NumberOfGlyphPoints };
+          return { /*VertexOffset=*/0, /*VertexCount=*/3 * bgInfo.VertexCount,
+            /*InstanceOffset=*/0, /*InstanceCount=*/this->NumberOfGlyphPoints };
         }
         if (pipelineType == GFX_PIPELINE_LINES_MITER_JOIN ||
           pipelineType == GFX_PIPELINE_LINES_MITER_JOIN_HOMOGENEOUS_CELL_SIZE)
         {
-          return { /*vertexCount=*/3 * bgInfo.VertexCount,
-            /*instanceCount=*/this->NumberOfGlyphPoints };
+          return { /*VertexOffset=*/0, /*VertexCount=*/3 * bgInfo.VertexCount,
+            /*InstanceOffset=*/0, /*InstanceCount=*/this->NumberOfGlyphPoints };
         }
         // Similar logic for effective total no. of imposter verts
         if (pipelineType == GFX_PIPELINE_LINES_ROUND_CAP_ROUND_JOIN ||
           pipelineType == GFX_PIPELINE_LINES_ROUND_CAP_ROUND_JOIN_HOMOGENEOUS_CELL_SIZE)
         {
-          return { /*vertexCount=*/18 * bgInfo.VertexCount,
-            /*instanceCount=*/this->NumberOfGlyphPoints };
+          return { /*VertexOffset=*/0, /*VertexCount=*/18 * bgInfo.VertexCount,
+            /*InstanceOffset=*/0, /*InstanceCount=*/this->NumberOfGlyphPoints };
         }
         break;
       case vtkWebGPUCellToPrimitiveConverter::TOPOLOGY_SOURCE_POLYGONS:
-        return { /*vertexCount=*/bgInfo.VertexCount, /*instanceCount=*/this->NumberOfGlyphPoints };
+        return { /*VertexOffset=*/0, /*VertexCount=*/bgInfo.VertexCount, /*InstanceOffset=*/0,
+          /*InstanceCount=*/this->NumberOfGlyphPoints };
       case vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES:
       default:
         break;
@@ -903,7 +905,8 @@ const TRIANGLE_VERTS = array(
   {
     // See comment in GetDrawCallArgs for explaination of 6 imposter verts.
     const auto& bgInfo = this->TopologyBindGroupInfos[topologySourceType];
-    return { /*VertexCount=*/6 * bgInfo.VertexCount, /*InstanceCount=*/this->NumberOfGlyphPoints };
+    return { /*VertexOffset=*/0, /*VertexCount=*/6 * bgInfo.VertexCount, /*InstanceOffset=*/0,
+      /*InstanceCount=*/this->NumberOfGlyphPoints };
   }
 
 private:
