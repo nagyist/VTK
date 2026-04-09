@@ -162,12 +162,13 @@ public:
     }
 
     std::vector<openvdb::Vec3R> positions;
+    positions.reserve(pointSet->GetNumberOfPoints());
     double coord[3];
     for (vtkIdType i = 0; i < pointSet->GetNumberOfPoints(); i++)
     {
       pointSet->GetPoint(i, coord);
-      positions.push_back(openvdb::Vec3R(
-        static_cast<float>(coord[0]), static_cast<float>(coord[1]), static_cast<float>(coord[2])));
+      positions.emplace_back(
+        static_cast<float>(coord[0]), static_cast<float>(coord[1]), static_cast<float>(coord[2]));
     }
 
     // The VDB Point-Partioner is used when bucketing points and requires a
@@ -183,10 +184,7 @@ public:
     float voxelSize = openvdb::points::computeVoxelSize(positionsWrapper, pointsPerVoxel);
 
     // voxelSize can't be too small or the OpenVDB library segfaults. 10e-5 is too small
-    if (voxelSize < 0.0001)
-    {
-      voxelSize = 0.0001;
-    }
+    voxelSize = std::max<double>(voxelSize, 0.0001);
 
     // Create a transform using this voxel-size.
     openvdb::math::Transform::Ptr transform =
@@ -204,7 +202,6 @@ public:
         openvdb::points::PointDataGrid>(*pointIndexGrid, positionsWrapper, *transform);
 
     // Set the name of the grid
-    std::string vdbName = gridName;
     grid->setName(gridName);
 
     // VDB attributes need to have unique names
@@ -264,8 +261,9 @@ public:
             openvdb::Vec3f ftuple(tuple[0], tuple[1], tuple[2]);
             values.push_back(ftuple);
           }
-          openvdb::NamePair vectorAttribute = openvdb::points::TypedAttributeArray<openvdb::Vec3f,
-            openvdb::points::NullCodec>::attributeType();
+          const openvdb::NamePair& vectorAttribute =
+            openvdb::points::TypedAttributeArray<openvdb::Vec3f,
+              openvdb::points::NullCodec>::attributeType();
           openvdb::points::appendAttribute(grid->tree(), vdbFieldName, vectorAttribute);
           // Create a wrapper around the values vector.
           openvdb::points::PointAttributeVector<openvdb::Vec3f> valuesWrapper(values);
@@ -277,11 +275,12 @@ public:
         else
         {
           std::vector<float> values;
+          values.reserve(numPoints);
           for (vtkIdType i = 0; i < numPoints; i++)
           {
             values.push_back(static_cast<float>(data->GetComponent(i, component)));
           }
-          openvdb::NamePair scalarAttribute = openvdb::points::TypedAttributeArray<float,
+          const openvdb::NamePair& scalarAttribute = openvdb::points::TypedAttributeArray<float,
             openvdb::points::NullCodec>::attributeType();
           openvdb::points::appendAttribute(grid->tree(), vdbFieldName, scalarAttribute);
           // Create a wrapper around the values vector.
@@ -613,7 +612,7 @@ void vtkOpenVDBWriter::WriteImageData(vtkImageData* imageData)
       openvdb::Vec3SGrid::Ptr vecGrid = openvdb::Vec3SGrid::create();
       // see
       // https://www.openvdb.org/documentation/doxygen/namespaceopenvdb_1_1v8__0.html#ae93f92d10730a52ed3b207d5811f6a6e
-      if (strcmp(arrayName, "color"))
+      if (strcmp(arrayName, "color") != 0)
       {
         vecGrid->setVectorType(openvdb::VEC_CONTRAVARIANT_RELATIVE);
       }
@@ -713,7 +712,7 @@ void vtkOpenVDBWriter::WriteImageData(vtkImageData* imageData)
       openvdb::Vec3SGrid::Ptr vecGrid = openvdb::Vec3SGrid::create();
       // see
       // https://www.openvdb.org/documentation/doxygen/namespaceopenvdb_1_1v8__0.html#ae93f92d10730a52ed3b207d5811f6a6e
-      if (strcmp(arrayName, "color"))
+      if (strcmp(arrayName, "color") != 0)
       {
         vecGrid->setVectorType(openvdb::VEC_CONTRAVARIANT_RELATIVE);
       }
@@ -927,7 +926,6 @@ void vtkOpenVDBWriter::SetRGBA(
     return;
   }
   // no lookup table
-  return;
 }
 
 //-----------------------------------------------------------------------------
