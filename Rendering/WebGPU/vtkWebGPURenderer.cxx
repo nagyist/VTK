@@ -264,10 +264,6 @@ void vtkWebGPURenderer::DeviceRender()
 //------------------------------------------------------------------------------
 void vtkWebGPURenderer::RecordRenderCommands()
 {
-  vtkRenderState state(this);
-  state.SetPropArrayAndCount(this->PropArray, this->PropArrayCount);
-  state.SetFrameBuffer(nullptr);
-
   if (auto* wgpuRenderWindow = vtkWebGPURenderWindow::SafeDownCast(this->RenderWindow))
   {
     vtkWebGPURenderPassDescriptorInternals renderPassDescriptor(
@@ -316,6 +312,33 @@ void vtkWebGPURenderer::UpdateBuffers()
     else
     {
       this->RebuildRenderBundle = true;
+    }
+    // Invalidate the bundle when the set of visible props has changed.
+    // This handles actor visibility toggles, additions, and removals.
+    // PropsRendered holds the previous frame's rendered props at this point
+    // because it is cleared later in UpdateGeometry().
+    // It is tempting to only check if PropArrayCount has changed, but that is insufficient.
+    // | Scenario | Count-only check | Prop array comparison |
+    // |----------|------------------|----------------------|
+    // | Actor hidden (count decreases) | Catches it | Catches it |
+    // | Actor shown (count increases) | Catches it | Catches it |
+    // | Actor A hidden + Actor B shown (count unchanged) | Misses it | Catches it |
+    // | Props reordered | Misses it | Catches it |
+
+    if (this->PropArrayCount != static_cast<int>(this->PropsRendered.size()))
+    {
+      this->InvalidateBundle();
+    }
+    else
+    {
+      for (int i = 0; i < this->PropArrayCount; ++i)
+      {
+        if (this->PropsRendered.find(this->PropArray[i]) == this->PropsRendered.end())
+        {
+          this->InvalidateBundle();
+          break;
+        }
+      }
     }
   }
   this->UpdateGeometry(); // mappers prepare geometry SSBO and pipeline layout.

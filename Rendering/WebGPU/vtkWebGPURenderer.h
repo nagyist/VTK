@@ -148,10 +148,9 @@ public:
 
   ///@{
   /**
-   * Set the usage of render bundles. This speeds up rendering in wasm.
-   * Render bundles are a performance optimization that minimize CPU time for rendering large number
-   * of props.
-   * @warning LEAKS MEMORY. See vtkWebGPURenderer::DeviceRender
+   * Set/Get the usage of render bundles. The default value is true.
+   * Render bundles are a performance optimization that minimize CPU time when many
+   * wgpu::RenderPassEncoder::Draw calls are used.
    */
   vtkSetMacro(UseRenderBundles, bool);
   vtkBooleanMacro(UseRenderBundles, bool);
@@ -221,11 +220,8 @@ protected:
   wgpu::BindGroup SceneBindGroup;
   wgpu::BindGroupLayout SceneBindGroupLayout;
 
-#ifdef __EMSCRIPTEN__
+  // Render bundles enable faster rendering.
   bool UseRenderBundles = true;
-#else
-  bool UseRenderBundles = false;
-#endif
   bool RebuildRenderBundle = false;
   // the commands in bundle get reused every frame.
   wgpu::RenderBundle Bundle;
