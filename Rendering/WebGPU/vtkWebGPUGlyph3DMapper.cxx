@@ -18,6 +18,7 @@
 #include "vtkPolyDataMapper.h"
 #include "vtkQuaternion.h"
 #include "vtkRenderer.h"
+#include "vtkTimeStamp.h"
 #include "vtkWebGPUActor.h"
 #include "vtkWebGPUCellToPrimitiveConverter.h"
 #include "vtkWebGPUPolyDataMapper.h"
@@ -89,6 +90,15 @@ public:
     {
       case vtkWebGPURenderer::RenderStageEnum::SyncDeviceResources:
         this->UpdateInstanceAttributeBuffers(wgpuConfiguration);
+        // Invalidate the render bundle when glyph structures have been rebuilt.
+        // This is needed because the bundle encodes draw calls with instance counts
+        // that may have changed. Buffer size alignment can mask small changes in
+        // NumberOfGlyphPoints, so we use the build timestamp for a robust check.
+        if (this->GlyphStructuresBuildTime > this->LastBundleGlyphBuildTime)
+        {
+          wgpuRenderer->InvalidateBundle();
+          this->LastBundleGlyphBuildTime = this->GlyphStructuresBuildTime;
+        }
         break;
       default:
         break;
@@ -188,6 +198,7 @@ public:
     }
     this->InstancePropertiesBuffer = nullptr;
     this->RebuildGraphicsPipelines = true;
+    this->LastBundleGlyphBuildTime = vtkTimeStamp();
     this->Superclass::ReleaseGraphicsResources(window);
   }
 
@@ -341,6 +352,7 @@ protected:
   bool Pickable = false;
   bool PickingAttributesModified = false;
   vtkMTimeType GlyphStructuresBuildTime = 0;
+  vtkMTimeType LastBundleGlyphBuildTime = 0;
 
   /**
    * Order in which the instance data attributes are concatenated into the mapper mesh SSBO
