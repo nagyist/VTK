@@ -80,7 +80,7 @@ int TestSelectVisiblePoints(int argc, char* argv[])
   std::cout << "Visible points when sphere is shown: " << numberOfVisiblePoints << std::endl;
   if (numberOfVisiblePoints == 0 || numberOfVisiblePoints == spherePoints->GetNumberOfPoints())
   {
-    std::cerr << "Number of points is incorrect" << std::endl;
+    std::cerr << __FILE__ << ":" << __LINE__ << " Number of points is incorrect\n";
     result = EXIT_FAILURE;
   }
 
@@ -93,7 +93,7 @@ int TestSelectVisiblePoints(int argc, char* argv[])
     std::cout << "Visible points when sphere is not shown: " << numberOfVisiblePoints << std::endl;
     if (numberOfVisiblePoints != spherePoints->GetNumberOfPoints())
     {
-      std::cerr << "Number of points is incorrect" << std::endl;
+      std::cerr << __FILE__ << ":" << __LINE__ << " Number of points is incorrect\n";
       result = EXIT_FAILURE;
     }
   }
@@ -118,7 +118,7 @@ int TestSelectVisiblePoints(int argc, char* argv[])
               << std::endl;
     if (numberOfVisiblePoints == spherePoints->GetNumberOfPoints())
     {
-      std::cerr << "Number of points is incorrect" << std::endl;
+      std::cerr << __FILE__ << ":" << __LINE__ << " Number of points is incorrect\n";
       result = EXIT_FAILURE;
     }
   }
@@ -135,7 +135,7 @@ int TestSelectVisiblePoints(int argc, char* argv[])
               << numberOfVisiblePoints << std::endl;
     if (numberOfVisiblePoints != spherePoints->GetNumberOfPoints() - numberOfOccludedPoints)
     {
-      std::cerr << "Number of points is incorrect" << std::endl;
+      std::cerr << __FILE__ << ":" << __LINE__ << " Number of points is incorrect\n";
       result = EXIT_FAILURE;
     }
   }
@@ -154,7 +154,7 @@ int TestSelectVisiblePoints(int argc, char* argv[])
               << numberOfVisiblePoints << std::endl;
     if (numberOfVisiblePoints != spherePoints->GetNumberOfPoints())
     {
-      std::cerr << "Number of points is incorrect" << std::endl;
+      std::cerr << __FILE__ << ":" << __LINE__ << " Number of points is incorrect\n";
       result = EXIT_FAILURE;
     }
   }
@@ -169,7 +169,7 @@ int TestSelectVisiblePoints(int argc, char* argv[])
               << std::endl;
     if (numberOfVisiblePoints == 0 || numberOfVisiblePoints == spherePoints->GetNumberOfPoints())
     {
-      std::cerr << "Number of points is incorrect" << std::endl;
+      std::cerr << __FILE__ << ":" << __LINE__ << " Number of points is incorrect\n";
       result = EXIT_FAILURE;
     }
   }
