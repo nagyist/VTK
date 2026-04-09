@@ -290,6 +290,13 @@ protected:
   vtkWebGPUConfiguration();
   ~vtkWebGPUConfiguration() override;
 
+private:
+  vtkWebGPUConfiguration(const vtkWebGPUConfiguration&) = delete;
+  void operator=(const vtkWebGPUConfiguration&) = delete;
+
+  friend class vtkWebGPUConfigurationInternals;
+  std::unique_ptr<vtkWebGPUConfigurationInternals> Internals;
+
   PowerPreferenceType PowerPreference = PowerPreferenceType::HighPerformance;
   // Initialized in constructor at runtime based on the operating system.
   BackendType Backend;
@@ -297,13 +304,6 @@ protected:
   double Timeout;
 
   vtkLogger::Verbosity GPUMemoryLogVerbosity = vtkLogger::VERBOSITY_INVALID;
-
-private:
-  vtkWebGPUConfiguration(const vtkWebGPUConfiguration&) = delete;
-  void operator=(const vtkWebGPUConfiguration&) = delete;
-
-  friend class vtkWebGPUConfigurationInternals;
-  std::unique_ptr<vtkWebGPUConfigurationInternals> Internals;
 };
 
 VTK_ABI_NAMESPACE_END

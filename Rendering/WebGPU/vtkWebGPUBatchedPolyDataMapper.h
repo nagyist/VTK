@@ -69,34 +69,6 @@ protected:
   vtkWebGPUBatchedPolyDataMapper();
   ~vtkWebGPUBatchedPolyDataMapper() override;
 
-  // Reference to CPDM
-  vtkCompositePolyDataMapper* Parent = nullptr;
-  // Maps an address of a vtkPolyData to its rendering attributes.
-  std::map<std::uintptr_t, std::unique_ptr<BatchElement>> VTKPolyDataToBatchElement;
-  std::map<unsigned int, std::uintptr_t> FlatIndexToPolyData;
-
-  struct CompositeDataProperties
-  {
-    vtkTypeUInt32 ApplyOverrideColors = 0;
-    vtkTypeFloat32 Opacity = 0;
-    vtkTypeUInt32 CompositeId = 0;
-    vtkTypeUInt32 Pickable = 1;
-    vtkTypeFloat32 Ambient[3] = {};
-    vtkTypeUInt32 CellIdOffsetForVerts = 0;
-    vtkTypeFloat32 Diffuse[3] = {};
-    vtkTypeUInt32 CellIdOffsetForLines = 0;
-    vtkTypeUInt32 CellIdOffsetForPolys = 0;
-    vtkTypeUInt32 CellIdOffsetForSelector = 0;
-  };
-  struct StorageBuffer
-  {
-    wgpu::Buffer Buffer;
-    std::uint64_t Size = 0;
-    std::uint32_t BindingSize = 0;
-  };
-  StorageBuffer CompositeDataPropertyStorage;
-  vtkTimeStamp ResourcesSyncTimeStamp;
-
   /**
    * Override to detect changes in the polydata batch.
    */
@@ -183,6 +155,34 @@ protected:
 private:
   vtkWebGPUBatchedPolyDataMapper(const vtkWebGPUBatchedPolyDataMapper&) = delete;
   void operator=(const vtkWebGPUBatchedPolyDataMapper&) = delete;
+
+  // Reference to CPDM
+  vtkCompositePolyDataMapper* Parent = nullptr;
+  // Maps an address of a vtkPolyData to its rendering attributes.
+  std::map<std::uintptr_t, std::unique_ptr<BatchElement>> VTKPolyDataToBatchElement;
+  std::map<unsigned int, std::uintptr_t> FlatIndexToPolyData;
+
+  struct CompositeDataProperties
+  {
+    vtkTypeUInt32 ApplyOverrideColors = 0;
+    vtkTypeFloat32 Opacity = 0;
+    vtkTypeUInt32 CompositeId = 0;
+    vtkTypeUInt32 Pickable = 1;
+    vtkTypeFloat32 Ambient[3] = {};
+    vtkTypeUInt32 CellIdOffsetForVerts = 0;
+    vtkTypeFloat32 Diffuse[3] = {};
+    vtkTypeUInt32 CellIdOffsetForLines = 0;
+    vtkTypeUInt32 CellIdOffsetForPolys = 0;
+    vtkTypeUInt32 CellIdOffsetForSelector = 0;
+  };
+  struct StorageBuffer
+  {
+    wgpu::Buffer Buffer;
+    std::uint64_t Size = 0;
+    std::uint32_t BindingSize = 0;
+  };
+  StorageBuffer CompositeDataPropertyStorage;
+  vtkTimeStamp ResourcesSyncTimeStamp;
 
   std::size_t CurrentDrawMeshId = 0; // 0 <= CurrentDrawMeshId < BatchSize
   std::uint32_t MinStorageBufferOffsetAlignment = 0;

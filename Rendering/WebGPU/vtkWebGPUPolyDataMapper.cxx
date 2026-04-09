@@ -4062,7 +4062,6 @@ void vtkWebGPUPolyDataMapper::ReleaseGraphicsResources(vtkWindow* w)
   for (int i = 0; i < vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES; ++i)
   {
     this->TopologyBindGroupInfos[i] = TopologyBindGroupInfo{};
-    this->IndirectDrawBufferUploadTimeStamp[i] = vtkTimeStamp();
   }
   this->CellConverter->ReleaseGraphicsResources(w);
   this->RebuildGraphicsPipelines = true;

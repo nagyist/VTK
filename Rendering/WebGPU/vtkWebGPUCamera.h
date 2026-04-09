@@ -46,6 +46,12 @@ protected:
   vtkWebGPUCamera();
   ~vtkWebGPUCamera() override;
 
+private:
+  vtkWebGPUCamera(const vtkWebGPUCamera&) = delete;
+  void operator=(const vtkWebGPUCamera&) = delete;
+
+  std::tuple<int, int, int, int> ComputeYInvertedViewport(vtkRenderer* renderer);
+
   vtkTimeStamp KeyMatrixTime;
   vtkRenderer* LastRenderer = nullptr;
   vtkNew<vtkMatrix3x3> NormalMatrix;
@@ -67,12 +73,6 @@ protected:
     vtkTypeUInt32 Flags = 0;
   };
   SceneTransforms CachedSceneTransforms;
-
-private:
-  vtkWebGPUCamera(const vtkWebGPUCamera&) = delete;
-  void operator=(const vtkWebGPUCamera&) = delete;
-
-  std::tuple<int, int, int, int> ComputeYInvertedViewport(vtkRenderer* renderer);
 };
 
 #define vtkWebGPUCamera_OVERRIDE_ATTRIBUTES vtkWebGPUCamera::CreateOverrideAttributes()

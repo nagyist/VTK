@@ -329,6 +329,69 @@ protected:
    */
   virtual std::string MakeDefaultWindowNameWithBackend();
 
+private:
+  // For accessing SubmitCommandBuffer to submit custom prop render work
+  friend class vtkWebGPUComputeOcclusionCuller;
+
+  vtkWebGPURenderWindow(const vtkWebGPURenderWindow&) = delete;
+  void operator=(const vtkWebGPURenderWindow&) = delete;
+
+  /**
+   * Sets up the compute pipeline of the vtkWebGPURenderer of this render window so that they use
+   * the same Adapter and Device as this render window
+   */
+  void InitializeRendererComputePipelines();
+
+  /**
+   * Submits command buffers to the device queue. This allows the execution of additional custom
+   * commands by the render window.
+   */
+  void SubmitCommandBuffer(int count, wgpu::CommandBuffer* commandBuffer);
+
+  /**
+   * Dispatches all the post-render compute pipelines of all the renderers of this render window
+   */
+  void PostRenderComputePipelines();
+
+  /**
+   * Renders actors of the renderers of this render window that were "deferred" to being rendered
+   * after the main rasterization pass
+   */
+  void PostRasterizationRender();
+
+  struct ComponentMapping
+  {
+    int Map[4];
+    int InComponents;
+    int OutComponents;
+    bool Valid;
+  };
+
+  ComponentMapping GetComponentMapping(wgpu::TextureFormat format, int desiredOutComponents);
+
+  template <typename TOutput, typename TInput>
+  struct PixelReadbackCallbackData
+  {
+    TOutput* OutputValues;
+    uint32_t Width, Height;
+    ComponentMapping Mapping;
+    std::function<TOutput(TInput)> Converter;
+  };
+
+  template <typename TOutput, typename TInput>
+  TOutput* GetTextureDataInternal(wgpu::Texture texture, wgpu::TextureFormat format, int x1, int y1,
+    int x2, int y2, const ComponentMapping& componentMapping,
+    std::function<TOutput(TInput)> converter = nullptr);
+
+  std::uint32_t FlipY(std::uint32_t y);
+
+  void ReadTextureFromGPU(wgpu::Texture& wgpuTexture, wgpu::TextureFormat format,
+    std::size_t mipLevel, wgpu::TextureAspect aspect, wgpu::Origin3D offsets,
+    wgpu::Extent3D extents, TextureMapCallback callback, void* userData);
+
+  void ReadTextureFromGPU(wgpu::Texture& wgpuTexture, wgpu::TextureFormat format,
+    std::size_t mipLevel, wgpu::TextureAspect aspect, TextureMapCallback callback, void* userData);
+
   bool WGPUInit();
   void WGPUFinalize();
 
@@ -406,69 +469,6 @@ protected:
   int DepthCopyTextureIndex = 0;
 
   int ScreenSize[2];
-
-private:
-  // For accessing SubmitCommandBuffer to submit custom prop render work
-  friend class vtkWebGPUComputeOcclusionCuller;
-
-  vtkWebGPURenderWindow(const vtkWebGPURenderWindow&) = delete;
-  void operator=(const vtkWebGPURenderWindow&) = delete;
-
-  /**
-   * Sets up the compute pipeline of the vtkWebGPURenderer of this render window so that they use
-   * the same Adapter and Device as this render window
-   */
-  void InitializeRendererComputePipelines();
-
-  /**
-   * Submits command buffers to the device queue. This allows the execution of additional custom
-   * commands by the render window.
-   */
-  void SubmitCommandBuffer(int count, wgpu::CommandBuffer* commandBuffer);
-
-  /**
-   * Dispatches all the post-render compute pipelines of all the renderers of this render window
-   */
-  void PostRenderComputePipelines();
-
-  /**
-   * Renders actors of the renderers of this render window that were "deferred" to being rendered
-   * after the main rasterization pass
-   */
-  void PostRasterizationRender();
-
-  struct ComponentMapping
-  {
-    int Map[4];
-    int InComponents;
-    int OutComponents;
-    bool Valid;
-  };
-
-  ComponentMapping GetComponentMapping(wgpu::TextureFormat format, int desiredOutComponents);
-
-  template <typename TOutput, typename TInput>
-  struct PixelReadbackCallbackData
-  {
-    TOutput* OutputValues;
-    uint32_t Width, Height;
-    ComponentMapping Mapping;
-    std::function<TOutput(TInput)> Converter;
-  };
-
-  template <typename TOutput, typename TInput>
-  TOutput* GetTextureDataInternal(wgpu::Texture texture, wgpu::TextureFormat format, int x1, int y1,
-    int x2, int y2, const ComponentMapping& componentMapping,
-    std::function<TOutput(TInput)> converter = nullptr);
-
-  std::uint32_t FlipY(std::uint32_t y);
-
-  void ReadTextureFromGPU(wgpu::Texture& wgpuTexture, wgpu::TextureFormat format,
-    std::size_t mipLevel, wgpu::TextureAspect aspect, wgpu::Origin3D offsets,
-    wgpu::Extent3D extents, TextureMapCallback callback, void* userData);
-
-  void ReadTextureFromGPU(wgpu::Texture& wgpuTexture, wgpu::TextureFormat format,
-    std::size_t mipLevel, wgpu::TextureAspect aspect, TextureMapCallback callback, void* userData);
 
   // Render textures acquired by the user on this render window. They are kept here in case the
   // render window is resized, in which case, we'll need to resize the render textures --> We need
