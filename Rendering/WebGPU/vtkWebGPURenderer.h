@@ -167,6 +167,24 @@ public:
    *
    * @note This does not use vtkSetMacro because the actor MTime should not be affected when a
    * render bundle is invalidated.
+   *
+   * @note This method is invoked under different circumstances when the render bundle needs to be
+   * invalidated and re-recorded.
+   * 1. When the mapper deems that the draw commands need to be re-recorded.
+   * 2. When the set of visible props has changed since last frame. This is checked in
+   * UpdateBuffers() by comparing the list of props rendered last frame with the current list of
+   * props to render.
+   *
+   * It is tempting to only check if PropArrayCount has changed, but that is insufficient.
+   * | Scenario | Count-only check | Prop array comparison |
+   * |----------|------------------|----------------------|
+   * | Actor hidden (count decreases) | Catches it | Catches it |
+   * | Actor shown (count increases) | Catches it | Catches it |
+   * | Actor A hidden + Actor B shown (count unchanged) | Misses it | Catches it |
+   * | Props reordered | Misses it | Can miss it (implementation defined) |
+   *
+   * Translucent geometry is not implemented properly yet, so for the last case
+   * it's fine to use the bundle as is when dealing with opaque geometry.
    */
   void InvalidateBundle()
   {

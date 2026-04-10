@@ -317,14 +317,6 @@ void vtkWebGPURenderer::UpdateBuffers()
     // This handles actor visibility toggles, additions, and removals.
     // PropsRendered holds the previous frame's rendered props at this point
     // because it is cleared later in UpdateGeometry().
-    // It is tempting to only check if PropArrayCount has changed, but that is insufficient.
-    // | Scenario | Count-only check | Prop array comparison |
-    // |----------|------------------|----------------------|
-    // | Actor hidden (count decreases) | Catches it | Catches it |
-    // | Actor shown (count increases) | Catches it | Catches it |
-    // | Actor A hidden + Actor B shown (count unchanged) | Misses it | Catches it |
-    // | Props reordered | Misses it | Catches it |
-
     if (this->PropArrayCount != static_cast<int>(this->PropsRendered.size()))
     {
       this->InvalidateBundle();
