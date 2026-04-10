@@ -151,6 +151,7 @@ inline void UpdateRangeFinite(A& min, A& max, const A& value)
 /**
  * Cast from double, and clamp to output type limits to avoid overlow.
  * This is a simple pass-through if the output type is floating point.
+ * If NaN is cast to integer, the resulting integer value is zero.
  */
 template <class A>
 inline A SafeCastFromDouble(double value)
@@ -165,7 +166,7 @@ inline A SafeCastFromDouble(double value)
     constexpr double typeMax = static_cast<double>(std::numeric_limits<A>::max());
     // The comparisons are done in a specific way to support 64-bit ints.
     // Explanation: casting the int64 max (equal to 2^63-1) to double gives
-    // 2^63 because double cannot exactly represent 2^63-1.  So value must
+    // 2^63 because double cannot exactly represent 2^63-1. So the value must
     // be strictly less than typeMax to avoid overflow when casting to int64.
     if (VTK_LIKELY(value >= typeMin))
     {
@@ -174,6 +175,10 @@ inline A SafeCastFromDouble(double value)
         return static_cast<A>(value);
       }
       return std::numeric_limits<A>::max();
+    }
+    if (VTK_UNLIKELY(std::isnan(value)))
+    {
+      return 0;
     }
     return std::numeric_limits<A>::lowest();
   }

@@ -134,6 +134,7 @@ vtk_add_test_cxx(vtkCommonCoreCxxTests tests
   TestLookupTable.cxx
   TestLookupTableThreaded.cxx
   TestMath.cxx
+  TestMathUtilities.cxx
   TestMersenneTwister.cxx
   TestMinimalStandardRandomSequence.cxx
   TestNew.cxx
