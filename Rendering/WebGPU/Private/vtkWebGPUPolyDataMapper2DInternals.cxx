@@ -1108,12 +1108,16 @@ void vtkWebGPUPolyDataMapper2DInternals::UpdateBuffers(
     }
   }
 
-  vtkTypeUInt32* vertexCounts[vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES];
-  wgpu::Buffer* connectivityBuffers[vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES];
-  wgpu::Buffer* cellIdBuffers[vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES];
-  wgpu::Buffer* edgeArrayBuffers[vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES];
-  wgpu::Buffer*
-    cellIdOffsetUniformBuffers[vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES];
+  std::array<vtkTypeUInt32*, vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES>
+    vertexCounts;
+  std::array<wgpu::Buffer*, vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES>
+    connectivityBuffers;
+  std::array<wgpu::Buffer*, vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES>
+    cellIdBuffers;
+  std::array<wgpu::Buffer*, vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES>
+    edgeArrayBuffers;
+  std::array<wgpu::Buffer*, vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES>
+    cellIdOffsetUniformBuffers;
   for (int i = 0; i < vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES; ++i)
   {
     auto& bgInfo = this->TopologyBindGroupInfos[i];

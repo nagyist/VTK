@@ -137,14 +137,12 @@ std::map<vtkWebGPUPolyDataMapper::GraphicsPipelineType,
     }
   };
 
-const char* PointAttribLabels[vtkWebGPUPolyDataMapper::PointDataAttributes::POINT_NB_ATTRIBUTES] = {
-  "point_coordinates", "point_colors", "point_normals", "point_tangents", "point_uvs",
-  "point_color_uvs"
-};
+std::array<const char*, vtkWebGPUPolyDataMapper::PointDataAttributes::POINT_NB_ATTRIBUTES>
+  PointAttribLabels{ "point_coordinates", "point_colors", "point_normals", "point_tangents",
+    "point_uvs", "point_color_uvs" };
 
-const char* CellAttribLabels[vtkWebGPUPolyDataMapper::CellDataAttributes::CELL_NB_ATTRIBUTES] = {
-  "cell_colors", "cell_normals"
-};
+std::array<const char*, vtkWebGPUPolyDataMapper::CellDataAttributes::CELL_NB_ATTRIBUTES>
+  CellAttribLabels{ "cell_colors", "cell_normals" };
 
 template <typename DestValueT>
 struct WriteTypedArray
@@ -1938,12 +1936,16 @@ void vtkWebGPUPolyDataMapper::UpdateMeshTopologyBuffers(
   vtkWebGPUConfiguration* wgpuConfiguration, vtkProperty* displayProperty)
 {
   auto* mesh = this->CurrentInput;
-  vtkTypeUInt32* vertexCounts[vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES];
-  wgpu::Buffer* connectivityBuffers[vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES];
-  wgpu::Buffer* cellIdBuffers[vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES];
-  wgpu::Buffer* edgeArrayBuffers[vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES];
-  wgpu::Buffer*
-    cellIdOffsetUniformBuffers[vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES];
+  std::array<vtkTypeUInt32*, vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES>
+    vertexCounts;
+  std::array<wgpu::Buffer*, vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES>
+    connectivityBuffers;
+  std::array<wgpu::Buffer*, vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES>
+    cellIdBuffers;
+  std::array<wgpu::Buffer*, vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES>
+    edgeArrayBuffers;
+  std::array<wgpu::Buffer*, vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES>
+    cellIdOffsetUniformBuffers;
 
   for (int i = 0; i < vtkWebGPUCellToPrimitiveConverter::NUM_TOPOLOGY_SOURCE_TYPES; ++i)
   {
