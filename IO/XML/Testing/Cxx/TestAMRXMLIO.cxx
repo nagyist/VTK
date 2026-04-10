@@ -227,7 +227,7 @@ bool TestAMRXMLIO_NonOverlappingAMR(
   reader2->Update();
 
   return Validate(vtkNonOverlappingAMR::SafeDownCast(reader->GetOutputDataObject(0)),
-    vtkNonOverlappingAMR::SafeDownCast(reader->GetOutputDataObject(0)));
+    vtkNonOverlappingAMR::SafeDownCast(reader2->GetOutputDataObject(0)));
 }
 
 bool TestAMRXMLIO_OverlappingAMR(
@@ -248,7 +248,7 @@ bool TestAMRXMLIO_OverlappingAMR(
   reader2->Update();
 
   return ValidateOAMR(vtkOverlappingAMR::SafeDownCast(reader->GetOutputDataObject(0)),
-    vtkOverlappingAMR::SafeDownCast(reader->GetOutputDataObject(0)));
+    vtkOverlappingAMR::SafeDownCast(reader2->GetOutputDataObject(0)));
 }
 
 }

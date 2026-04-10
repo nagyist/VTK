@@ -193,6 +193,7 @@ bool vtkGroupTimeStepsFilter::AddTimeStep(
     return false;
   }
 
+  const auto name = "timestep" + vtk::to_string(timeStep);
   const auto idx = pdc->GetNumberOfPartitionedDataSets();
   for (unsigned int cc = 0; cc < data->GetNumberOfPartitionedDataSets(); ++cc)
   {
@@ -200,10 +201,15 @@ bool vtkGroupTimeStepsFilter::AddTimeStep(
     if (data->HasMetaData(cc))
     {
       pdc->GetMetaData(idx + cc)->Copy(data->GetMetaData(cc));
+      if (data->GetMetaData(cc)->Has(vtkCompositeDataSet::NAME()))
+      {
+        const std::string blockName =
+          name + '_' + data->GetMetaData(cc)->Get(vtkCompositeDataSet::NAME());
+        pdc->GetMetaData(idx + cc)->Set(vtkCompositeDataSet::NAME(), blockName.c_str());
+      }
     }
   }
 
-  const auto name = "timestep" + vtk::to_string(timeStep);
   auto assembly = pdc->GetDataAssembly();
   auto node = assembly->AddNode(name.c_str());
   assembly->AddDataSetIndexRange(

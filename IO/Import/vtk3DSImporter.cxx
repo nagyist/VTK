@@ -18,7 +18,9 @@
 #include "vtkProperty.h"
 #include "vtkRenderer.h"
 #include "vtkResourceStream.h"
+#include "vtkStringFormatter.h"
 #include "vtkStripper.h"
+
 #include "vtksys/SystemTools.hxx"
 
 #include <sstream>
@@ -242,14 +244,21 @@ void vtk3DSImporter::ImportActors(vtkRenderer* renderer)
       polyStripper->SetInputData(polyData);
     }
 
-    int nodeid = this->SceneHierarchy->AddNode("mesh");
-    this->SceneHierarchy->SetAttribute(
-      nodeid, "flat_actor_id", this->ActorCollection->GetNumberOfItems());
-
+    int nodeId;
     if (mesh->name[0] != '\0')
     {
-      this->SceneHierarchy->SetAttribute(nodeid, "label", mesh->name);
+      const auto nodeName = vtkDataAssembly::MakeValidNodeName(mesh->name);
+      nodeId = this->SceneHierarchy->AddNode(nodeName.c_str());
+      this->SceneHierarchy->SetAttribute(nodeId, "label", mesh->name);
     }
+    else
+    {
+      const std::string nodeName =
+        "mesh_" + vtk::to_string(this->ActorCollection->GetNumberOfItems());
+      nodeId = this->SceneHierarchy->AddNode(nodeName.c_str());
+    }
+    this->SceneHierarchy->SetAttribute(
+      nodeId, "flat_actor_id", this->ActorCollection->GetNumberOfItems());
 
     polyMapper->SetInputConnection(polyStripper->GetOutputPort());
     vtkDebugMacro(<< "Importing Actor: " << mesh->name);

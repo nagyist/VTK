@@ -8,7 +8,7 @@ from vtkmodules.vtkFiltersGeometry import vtkGeometryFilter
 from vtkmodules.vtkIOEnSight import vtkEnSightGoldBinaryReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
-    vtkHierarchicalPolyDataMapper,
+    vtkCompositePolyDataMapper,
     vtkRenderWindow,
     vtkRenderWindowInteractor,
     vtkRenderer,
@@ -37,7 +37,7 @@ lut.SetHueRange(0.667,0.0)
 lut.SetTableRange(0.636,1.34)
 geom = vtkGeometryFilter()
 geom.SetInputConnection(reader.GetOutputPort())
-blockMapper0 = vtkHierarchicalPolyDataMapper()
+blockMapper0 = vtkCompositePolyDataMapper()
 blockMapper0.SetInputConnection(geom.GetOutputPort())
 blockActor0 = vtkActor()
 blockActor0.SetMapper(blockMapper0)

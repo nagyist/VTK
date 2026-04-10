@@ -4,7 +4,7 @@ from vtkmodules.vtkFiltersGeometry import vtkGeometryFilter
 from vtkmodules.vtkIOEnSight import vtkGenericEnSightReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
-    vtkHierarchicalPolyDataMapper,
+    vtkCompositePolyDataMapper,
     vtkRenderWindow,
     vtkRenderWindowInteractor,
     vtkRenderer,
@@ -30,7 +30,7 @@ reader.SetCaseFileName(VTK_DATA_ROOT + "/Data/EnSight/blow2_ascii.case")
 reader.SetTimeValue(1)
 geom = vtkGeometryFilter()
 geom.SetInputConnection(reader.GetOutputPort())
-mapper = vtkHierarchicalPolyDataMapper()
+mapper = vtkCompositePolyDataMapper()
 mapper.SetInputConnection(geom.GetOutputPort())
 mapper.SetColorModeToMapScalars()
 mapper.SetScalarModeToUsePointFieldData()

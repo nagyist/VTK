@@ -4,7 +4,7 @@ from vtkmodules.vtkFiltersCore import vtkContourFilter
 from vtkmodules.vtkIOEnSight import vtkGenericEnSightReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
-    vtkHierarchicalPolyDataMapper,
+    vtkCompositePolyDataMapper,
     vtkRenderWindow,
     vtkRenderWindowInteractor,
     vtkRenderer,
@@ -39,7 +39,7 @@ Contour0 = vtkContourFilter()
 Contour0.SetInputConnection(reader.GetOutputPort())
 Contour0.SetValue(0,200)
 Contour0.SetComputeScalars(1)
-mapper = vtkHierarchicalPolyDataMapper()
+mapper = vtkCompositePolyDataMapper()
 mapper.SetInputConnection(Contour0.GetOutputPort())
 mapper.SetScalarRange(0,1)
 mapper.SetScalarVisibility(1)

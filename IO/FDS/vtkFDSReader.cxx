@@ -1039,7 +1039,6 @@ struct vtkFDSReader::vtkInternals
   std::vector<::DeviceFileData> DevcFiles;
   std::vector<::BoundaryFieldData> BoundaryFields;
 
-  unsigned int MaxNbOfPartitions = 0;
   unsigned int GridCount = 0;
 
   std::array<double, 2> TimeRange;
@@ -1160,10 +1159,9 @@ int vtkFDSReader::RequestInformation(vtkInformation* vtkNotUsed(request),
   const auto baseNodes = this->Assembly->AddNodes(BASE_NODES);
 
   std::string rootNodeName = vtksys::SystemTools::GetFilenameWithoutLastExtension(this->FileName);
-  rootNodeName = this->SanitizeName(rootNodeName);
+  rootNodeName = vtkDataAssembly::MakeValidNodeName(rootNodeName.c_str());
   this->Assembly->SetNodeName(vtkDataAssembly::GetRootNode(), rootNodeName.c_str());
 
-  this->Internals->MaxNbOfPartitions = 0;
   this->Internals->GridCount = 0;
   this->Internals->DevcFiles.clear();
   this->Internals->BoundaryFields.clear();
@@ -1495,14 +1493,12 @@ bool vtkFDSReader::ParseGRID(const std::vector<int>& baseNodes)
   }
 
   // Register grid and fill assembly
-  gridName = this->SanitizeName(gridName);
-  const int idx = this->Assembly->AddNode(gridName.c_str(), baseNodes[GRIDS]);
   ::GridData gridData;
   gridData.GridNb = this->Internals->GridCount;
   this->Internals->GridCount++;
   gridData.Geometry = grid;
-  this->Internals->Grids.emplace(idx, gridData);
-  this->Internals->MaxNbOfPartitions++;
+  auto nodeId = this->GetNodeId(baseNodes[GRIDS], gridName);
+  this->Internals->Grids.emplace(nodeId, gridData);
 
   // Parse obstacles
   std::string obst;
@@ -1558,7 +1554,7 @@ bool vtkFDSReader::ParseGRID(const std::vector<int>& baseNodes)
     ::ObstacleData oData;
     // Blockage number is used to retrieve corresponding data in .bf files
     oData.BlockageNumber = iBlock + 1;
-    oData.AssociatedGrid = &(this->Internals->Grids[idx]);
+    oData.AssociatedGrid = &(this->Internals->Grids[nodeId]);
     std::array<vtkIdType, 6> subExtent;
     for (vtkIdType iExtent = 0; iExtent < 6; ++iExtent)
     {
@@ -1571,7 +1567,7 @@ bool vtkFDSReader::ParseGRID(const std::vector<int>& baseNodes)
       }
     }
 
-    oData.Geometry = ::GenerateSubGrid(this->Internals->Grids[idx].Geometry, subExtent);
+    oData.Geometry = ::GenerateSubGrid(this->Internals->Grids[nodeId].Geometry, subExtent);
 
     // Discard the rest of the line
     if (!parser.DiscardLine())
@@ -1585,10 +1581,8 @@ bool vtkFDSReader::ParseGRID(const std::vector<int>& baseNodes)
   {
     auto& oData = gridBoundaries[iBlock];
     std::string blockageName = gridName + "_Blockage_" + vtk::to_string(oData.BlockageNumber);
-    blockageName = this->SanitizeName(blockageName);
-    const int bIdx = this->Assembly->AddNode(blockageName.c_str(), baseNodes[::BOUNDARIES]);
-    this->Internals->Boundaries.emplace(bIdx, oData);
-    this->Internals->MaxNbOfPartitions++;
+    nodeId = this->GetNodeId(baseNodes[BOUNDARIES], blockageName);
+    this->Internals->Boundaries.emplace(nodeId, oData);
   }
 
   return true;
@@ -1688,10 +1682,8 @@ bool vtkFDSReader::ParseCSVF(const std::vector<int>& baseNodes)
     ::ExtractTimeValuesFromCSV(csvReader, fileName, hrrData.TimeValues);
 
     // Register file path and fill assembly
-    nodeName = this->SanitizeName(nodeName);
-    const int idx = this->Assembly->AddNode(nodeName.c_str(), baseNodes[HRR]);
-    this->Internals->HRRs.emplace(idx, hrrData);
-    this->Internals->MaxNbOfPartitions++;
+    auto nodeId = this->GetNodeId(baseNodes[HRR], nodeName);
+    this->Internals->HRRs.emplace(nodeId, hrrData);
   }
   else if (fileType == "steps")
   {
@@ -1761,10 +1753,8 @@ bool vtkFDSReader::ParseDEVICE(const std::vector<int>& baseNodes)
   }
 
   // Register file path and fill assembly
-  std::string nodeName = this->SanitizeName(dData.Name);
-  const int idx = this->Assembly->AddNode(nodeName.c_str(), baseNodes[DEVICES]);
-  this->Internals->Devices.emplace(idx, dData);
-  this->Internals->MaxNbOfPartitions++;
+  auto nodeId = this->GetNodeId(baseNodes[DEVICES], dData.Name);
+  this->Internals->Devices.emplace(nodeId, dData);
 
   return true;
 }
@@ -1787,6 +1777,22 @@ bool vtkFDSReader::ParseSLCFSLCC(const std::vector<int>& baseNodes, bool cellCen
   }
   // FDS counting starts at 1
   sData.AssociatedGridNumber -= 1;
+  // Find the grid name by matching AssociatedGridNumber to GridNb in Internals->Grids
+  std::string associatedGridName;
+  for (const auto& [nodeId, grid] : this->Internals->Grids)
+  {
+    if (grid.GridNb == sData.AssociatedGridNumber)
+    {
+      associatedGridName = this->Assembly->GetNodeName(nodeId);
+      break;
+    }
+  }
+  if (associatedGridName.empty())
+  {
+    vtkErrorMacro("Could not find grid with number " << sData.AssociatedGridNumber + 1
+                                                     << " for slice at line " << parser.LineNumber);
+    return false;
+  }
 
   // Search for dimensions
   // We can have a specified slice ID before that but it's not mandatory
@@ -1915,10 +1921,9 @@ bool vtkFDSReader::ParseSLCFSLCC(const std::vector<int>& baseNodes, bool cellCen
 
   sData.TimeValues = ::ParseTimeStepsInSliceFile(sData.FileName);
 
-  SLCFID = this->SanitizeName(SLCFID);
-  const int idx = this->Assembly->AddNode(SLCFID.c_str(), baseNodes[SLICES]);
-  this->Internals->Slices.emplace(idx, sData);
-  this->Internals->MaxNbOfPartitions++;
+  const auto nodeName = associatedGridName + '_' + SLCFID;
+  auto nodeId = this->GetNodeId(baseNodes[SLICES], nodeName);
+  this->Internals->Slices.emplace(nodeId, sData);
 
   return true;
 }
@@ -2135,17 +2140,18 @@ vtkSmartPointer<vtkResourceStream> vtkFDSReader::Open()
 }
 
 //------------------------------------------------------------------------------
-std::string vtkFDSReader::SanitizeName(const std::string& name)
+int vtkFDSReader::GetNodeId(int parentNode, const std::string& givenNodeName)
 {
-  if (this->Assembly->IsNodeNameValid(name.c_str()))
+  const auto nodeName = vtkDataAssembly::MakeValidNodeName(givenNodeName.c_str());
+  int nodeId = this->Assembly->GetChild(parentNode, nodeName.c_str());
+  if (nodeId != -1)
   {
-    return name;
+    vtkErrorMacro(<< "Node with name " << nodeName << " already exists under parent node "
+                  << this->Assembly->GetNodeName(parentNode) << ". It won't be added.");
+    return -1;
   }
-
-  std::string newName = this->Assembly->MakeValidNodeName(name.c_str());
-  vtkWarningMacro(
-    "Name " + name + " is not a valid data assembly node name.\nNew name : " << newName);
-  return newName;
+  nodeId = this->Assembly->AddNode(nodeName.c_str(), parentNode);
+  return nodeId;
 }
 
 VTK_ABI_NAMESPACE_END

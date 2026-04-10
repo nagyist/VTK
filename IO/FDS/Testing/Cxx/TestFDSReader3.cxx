@@ -82,7 +82,7 @@ int TestFDSReader3(int argc, char* argv[])
   // Test extraction
   reader->AddSelector("/_1000meca/Grids");
   reader->AddSelector("/_1000meca/HRR");
-  reader->AddSelector("/_1000meca/Slices/SOOT");
+  reader->AddSelector("/_1000meca/Slices/Mesh01_SOOT");
   reader->AddSelector("/_1000meca/Boundaries/Mesh01_Blockage_3");
   reader->Update();
 
@@ -156,7 +156,7 @@ int TestFDSReader3(int argc, char* argv[])
   }
 
   // Test slice
-  nodeIds = outAssembly->GetDataSetIndices(outAssembly->FindFirstNodeWithName("SOOT"));
+  nodeIds = outAssembly->GetDataSetIndices(outAssembly->FindFirstNodeWithName("Mesh01_SOOT"));
   auto slice = vtkRectilinearGrid::SafeDownCast(output->GetPartition(nodeIds[0], 0));
   if (!slice)
   {

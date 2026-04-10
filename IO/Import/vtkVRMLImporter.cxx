@@ -509,15 +509,22 @@ void vtkVRMLImporter::enterNode(const char* nodeType)
     this->CurrentActor->SetPosition(this->CurrentTransform->GetPosition());
     this->CurrentActor->SetScale(this->CurrentTransform->GetScale());
 
-    int nodeid = this->SceneHierarchy->AddNode("shape");
-    this->SceneHierarchy->SetAttribute(
-      nodeid, "flat_actor_id", this->ActorCollection->GetNumberOfItems());
-
+    int nodeId;
     if (this->Parser->creatingDEF && this->Parser->curDEFName != nullptr &&
       this->Parser->curDEFName[0] != '\0')
     {
-      this->SceneHierarchy->SetAttribute(nodeid, "label", this->Parser->curDEFName);
+      const auto nodeName = vtkDataAssembly::MakeValidNodeName(this->Parser->curDEFName);
+      nodeId = this->SceneHierarchy->AddNode(nodeName.c_str());
+      this->SceneHierarchy->SetAttribute(nodeId, "label", this->Parser->curDEFName);
     }
+    else
+    {
+      const std::string nodeName =
+        "shape_" + vtk::to_string(this->ActorCollection->GetNumberOfItems());
+      nodeId = this->SceneHierarchy->AddNode(nodeName.c_str());
+    }
+    this->SceneHierarchy->SetAttribute(
+      nodeId, "flat_actor_id", this->ActorCollection->GetNumberOfItems());
 
     // Add actor to renderer
     this->Renderer->AddActor(this->CurrentActor);

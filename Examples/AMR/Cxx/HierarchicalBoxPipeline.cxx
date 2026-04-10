@@ -12,10 +12,10 @@
 #include "vtkCellDataToPointData.h"
 #include "vtkCompositeDataGeometryFilter.h"
 #include "vtkCompositeDataPipeline.h"
+#include "vtkCompositePolyDataMapper.h"
 #include "vtkContourFilter.h"
 #include "vtkDebugLeaks.h"
 #include "vtkExtractLevel.h"
-#include "vtkHierarchicalPolyDataMapper.h"
 #include "vtkOutlineCornerFilter.h"
 #include "vtkProperty.h"
 #include "vtkRenderWindow.h"
@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
   shrink->SetInputConnection(0, geom->GetOutputPort(0));
 
   // Rendering objects
-  vtkHierarchicalPolyDataMapper* shMapper = vtkHierarchicalPolyDataMapper::New();
+  vtkCompositePolyDataMapper* shMapper = vtkCompositePolyDataMapper::New();
   shMapper->SetInputConnection(0, shrink->GetOutputPort(0));
   vtkActor* shActor = vtkActor::New();
   shActor->SetMapper(shMapper);
@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
   // Rendering objects
   // This one is actually just a vtkPolyData so it doesn't need a hierarchical
   // mapper, but we use this one to test hierarchical mapper with polydata input
-  vtkHierarchicalPolyDataMapper* ocMapper = vtkHierarchicalPolyDataMapper::New();
+  vtkCompositePolyDataMapper* ocMapper = vtkCompositePolyDataMapper::New();
   ocMapper->SetInputConnection(0, ocf->GetOutputPort(0));
   vtkActor* ocActor = vtkActor::New();
   ocActor->SetMapper(ocMapper);
@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
   contour->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "phi");
 
   // Rendering objects
-  vtkHierarchicalPolyDataMapper* contMapper = vtkHierarchicalPolyDataMapper::New();
+  vtkCompositePolyDataMapper* contMapper = vtkCompositePolyDataMapper::New();
   contMapper->SetInputConnection(0, contour->GetOutputPort(0));
   vtkActor* contActor = vtkActor::New();
   contActor->SetMapper(contMapper);

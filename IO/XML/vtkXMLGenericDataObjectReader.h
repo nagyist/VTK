@@ -21,7 +21,6 @@
 #include "vtkXMLDataReader.h"
 
 VTK_ABI_NAMESPACE_BEGIN
-class vtkHierarchicalBoxDataSet;
 class vtkImageData;
 class vtkMultiBlockDataSet;
 class vtkOverlappingAMR;

@@ -4,7 +4,7 @@ from vtkmodules.vtkFiltersGeometry import vtkDataSetSurfaceFilter
 from vtkmodules.vtkIOEnSight import vtkGenericEnSightReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
-    vtkHierarchicalPolyDataMapper,
+    vtkCompositePolyDataMapper,
     vtkRenderWindow,
     vtkRenderWindowInteractor,
     vtkRenderer,
@@ -29,7 +29,7 @@ reader.SetDefaultExecutivePrototype(cdp)
 reader.SetCaseFileName(VTK_DATA_ROOT + "/Data/EnSight/TEST.case")
 dss = vtkDataSetSurfaceFilter()
 dss.SetInputConnection(reader.GetOutputPort())
-mapper = vtkHierarchicalPolyDataMapper()
+mapper = vtkCompositePolyDataMapper()
 mapper.SetInputConnection(dss.GetOutputPort())
 mapper.SetColorModeToMapScalars()
 mapper.SetScalarModeToUseCellFieldData()

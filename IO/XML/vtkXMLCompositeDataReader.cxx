@@ -13,12 +13,9 @@
 #include "vtkInformationIntegerVectorKey.h"
 #include "vtkInformationVector.h"
 #include "vtkLogger.h"
-#include "vtkMultiBlockDataSet.h"
 #include "vtkNew.h"
 #include "vtkObjectFactory.h"
 #include "vtkSmartPointer.h"
-#include "vtkStringArray.h"
-#include "vtkUniformGrid.h"
 #include "vtkXMLDataElement.h"
 #include "vtkXMLDataParser.h"
 #include "vtkXMLHyperTreeGridReader.h"
@@ -348,7 +345,11 @@ void vtkXMLCompositeDataReader::ReadXMLData()
   {
     return;
   }
-
+  // if there are metadata, copy them
+  if (this->Metadata)
+  {
+    composite->CopyStructure(this->Metadata);
+  }
   this->ReadFieldData();
 
   // Find the path to this file in case the internal files are
@@ -518,9 +519,31 @@ void vtkXMLCompositeDataReader::SetFileName(const char* fname)
 int vtkXMLCompositeDataReader::RequestInformation(
   vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector)
 {
-  this->Superclass::RequestInformation(request, inputVector, outputVector);
+  if (!this->Superclass::RequestInformation(request, inputVector, outputVector))
+  {
+    return 0;
+  }
+
   vtkInformation* info = outputVector->GetInformationObject(0);
   info->Set(CAN_HANDLE_PIECE_REQUEST(), 1);
+
+  this->PrepareToCreateMetaData(this->GetPrimaryElement());
+
+  this->CreateMetaData(this->GetPrimaryElement());
+
+  if (this->Metadata)
+  {
+    this->SyncCompositeDataArraySelections(
+      this->Metadata, this->GetPrimaryElement(), this->GetFilePath());
+
+    outputVector->GetInformationObject(0)->Set(
+      vtkCompositeDataPipeline::COMPOSITE_DATA_META_DATA(), this->Metadata);
+  }
+  else
+  {
+    outputVector->GetInformationObject(0)->Remove(
+      vtkCompositeDataPipeline::COMPOSITE_DATA_META_DATA());
+  }
   return 1;
 }
 

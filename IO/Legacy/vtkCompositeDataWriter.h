@@ -21,7 +21,6 @@
 
 VTK_ABI_NAMESPACE_BEGIN
 class vtkCompositeDataSet;
-class vtkHierarchicalBoxDataSet;
 class vtkMultiBlockDataSet;
 class vtkMultiPieceDataSet;
 class vtkNonOverlappingAMR;

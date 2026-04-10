@@ -7,7 +7,7 @@ from vtkmodules.vtkFiltersGeometry import vtkGeometryFilter
 from vtkmodules.vtkIOEnSight import vtkGenericEnSightReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
-    vtkHierarchicalPolyDataMapper,
+    vtkCompositePolyDataMapper,
     vtkRenderWindow,
     vtkRenderWindowInteractor,
     vtkRenderer,
@@ -34,7 +34,7 @@ reader.UpdateInformation()
 reader.GetOutputInformation(0).Set(vtkStreamingDemandDrivenPipeline.UPDATE_TIME_STEP(), 0.1)
 geom0 = vtkGeometryFilter()
 geom0.SetInputConnection(reader.GetOutputPort())
-mapper0 = vtkHierarchicalPolyDataMapper()
+mapper0 = vtkCompositePolyDataMapper()
 mapper0.SetInputConnection(geom0.GetOutputPort())
 mapper0.SetColorModeToMapScalars()
 mapper0.SetScalarModeToUsePointFieldData()

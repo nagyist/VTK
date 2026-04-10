@@ -13,11 +13,14 @@
 #ifndef vtkHierarchicalDataLevelFilter_h
 #define vtkHierarchicalDataLevelFilter_h
 
+#include "vtkDeprecation.h"          // for VTK_DEPRECATED_IN_9_7_0
 #include "vtkFiltersGeneralModule.h" // For export macro
 #include "vtkLevelIdScalars.h"
 
 VTK_ABI_NAMESPACE_BEGIN
-class VTKFILTERSGENERAL_EXPORT vtkHierarchicalDataLevelFilter : public vtkLevelIdScalars
+class VTK_DEPRECATED_IN_9_7_0(
+  "Use vtkLevelIdScalars") VTKFILTERSGENERAL_EXPORT vtkHierarchicalDataLevelFilter
+  : public vtkLevelIdScalars
 {
 public:
   vtkTypeMacro(vtkHierarchicalDataLevelFilter, vtkLevelIdScalars);

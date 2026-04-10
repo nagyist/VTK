@@ -4,7 +4,7 @@ from vtkmodules.vtkFiltersGeometry import vtkGeometryFilter
 from vtkmodules.vtkIOEnSight import vtkGenericEnSightReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
-    vtkHierarchicalPolyDataMapper,
+    vtkCompositePolyDataMapper,
     vtkRenderWindow,
     vtkRenderWindowInteractor,
     vtkRenderer,
@@ -34,7 +34,7 @@ reader.SetCellArrayStatus("thickness",1)
 reader.SetCellArrayStatus("displacement",1)
 geom = vtkGeometryFilter()
 geom.SetInputConnection(reader.GetOutputPort())
-mapper = vtkHierarchicalPolyDataMapper()
+mapper = vtkCompositePolyDataMapper()
 mapper.SetInputConnection(geom.GetOutputPort())
 mapper.SetScalarRange(0.5,1.0)
 actor = vtkActor()

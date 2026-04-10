@@ -5,7 +5,7 @@ from vtkmodules.vtkFiltersGeometry import vtkGeometryFilter
 from vtkmodules.vtkIOEnSight import vtkGenericEnSightReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
-    vtkHierarchicalPolyDataMapper,
+    vtkCompositePolyDataMapper,
     vtkRenderWindow,
     vtkRenderWindowInteractor,
     vtkRenderer,
@@ -39,7 +39,7 @@ calc.AddScalarArrayName("pointScalars",0)
 calc.AddVectorArrayName("pointCVectors_r")
 calc.AddVectorArrayName("pointCVectors_i")
 calc.SetResultArrayName("test")
-mapper = vtkHierarchicalPolyDataMapper()
+mapper = vtkCompositePolyDataMapper()
 mapper.SetInputConnection(calc.GetOutputPort())
 mapper.SetColorModeToMapScalars()
 mapper.SetScalarModeToUsePointFieldData()

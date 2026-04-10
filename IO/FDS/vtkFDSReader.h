@@ -117,13 +117,17 @@ private:
   bool ParseBNDFBNDC(bool cellCentered);
 
   vtkSmartPointer<vtkResourceStream> Open();
-  std::string SanitizeName(const std::string& name);
 
   int AssemblyTag = 0;
   std::string FileName;
   std::set<std::string> Selectors;
 
   vtkNew<vtkDataAssembly> Assembly;
+
+  /**
+   * Given a parent node and node name, return the node id.
+   */
+  int GetNodeId(int parentNode, const std::string& givenNodeName);
 
   double TimeTolerance = 1e-5;
 

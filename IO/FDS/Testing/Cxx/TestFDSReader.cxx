@@ -112,9 +112,9 @@ bool TestExampleFile(const std::string& dataRoot)
   reader->AddSelector("/test_core/Grids/Mesh01");
   reader->AddSelector("/test_core/Devices/HRR_3D");
   reader->AddSelector("/test_core/HRR/test_core_hrr");
-  reader->AddSelector("/test_core/Slices/STRUCTURED_VelX_VELOCITY");
+  reader->AddSelector("/test_core/Slices/Mesh01_STRUCTURED_VelX_VELOCITY");
   // Following slice contains cell-centered data
-  reader->AddSelector("/test_core/Slices/STRUCTURED_TempZ_TEMPERATURE");
+  reader->AddSelector("/test_core/Slices/Mesh01_STRUCTURED_TempZ_TEMPERATURE");
   reader->AddSelector("/test_core/Boundaries/Mesh01_Blockage_3");
   reader->Update();
 
@@ -138,9 +138,7 @@ bool TestExampleFile(const std::string& dataRoot)
   {
     return false;
   }
-  // XXX: STRUCTURED_TempZ_TEMPERATURE covers 2 grids, resulting on having 3 slices.
-  // See https://gitlab.kitware.com/paraview/paraview/-/issues/22683
-  if (!testValue(outAssembly->GetNumberOfChildren(4), 3, "number of slices"))
+  if (!testValue(outAssembly->GetNumberOfChildren(4), 2, "number of slices"))
   {
     return false;
   }
@@ -216,8 +214,8 @@ bool TestExampleFile(const std::string& dataRoot)
   }
 
   // Test slice with point-centered data
-  nodeIds =
-    outAssembly->GetDataSetIndices(outAssembly->FindFirstNodeWithName("STRUCTURED_VelX_VELOCITY"));
+  nodeIds = outAssembly->GetDataSetIndices(
+    outAssembly->FindFirstNodeWithName("Mesh01_STRUCTURED_VelX_VELOCITY"));
   auto* sliceVelX = vtkRectilinearGrid::SafeDownCast(output->GetPartition(nodeIds[0], 0));
   if (!sliceVelX)
   {
@@ -249,7 +247,7 @@ bool TestExampleFile(const std::string& dataRoot)
 
   // Test slice with cell-centered data
   nodeIds = outAssembly->GetDataSetIndices(
-    outAssembly->FindFirstNodeWithName("STRUCTURED_TempZ_TEMPERATURE"));
+    outAssembly->FindFirstNodeWithName("Mesh01_STRUCTURED_TempZ_TEMPERATURE"));
   auto* sliceTempZ = vtkRectilinearGrid::SafeDownCast(output->GetPartition(nodeIds[0], 0));
   if (!sliceTempZ)
   {

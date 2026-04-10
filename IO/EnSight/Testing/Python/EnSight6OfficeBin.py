@@ -10,7 +10,7 @@ from vtkmodules.vtkFiltersSources import vtkConeSource
 from vtkmodules.vtkIOEnSight import vtkGenericEnSightReader
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
-    vtkHierarchicalPolyDataMapper,
+    vtkCompositePolyDataMapper,
     vtkRenderWindow,
     vtkRenderWindowInteractor,
     vtkRenderer,
@@ -38,7 +38,7 @@ reader.Update()
 
 outline = vtkStructuredGridOutlineFilter()
 outline.SetInputConnection(reader.GetOutputPort())
-mapOutline = vtkHierarchicalPolyDataMapper()
+mapOutline = vtkCompositePolyDataMapper()
 mapOutline.SetInputConnection(outline.GetOutputPort())
 outlineActor = vtkActor()
 outlineActor.SetMapper(mapOutline)
@@ -58,7 +58,7 @@ cones.SetSourceConnection(cone.GetOutputPort())
 cones.SetScaleFactor(3)
 cones.SetInputArrayToProcess(1, 0, 0, vtkDataObject.FIELD_ASSOCIATION_POINTS, "vectors")
 cones.SetScaleModeToScaleByVector()
-mapCones = vtkHierarchicalPolyDataMapper()
+mapCones = vtkCompositePolyDataMapper()
 mapCones.SetInputConnection(cones.GetOutputPort())
 mapCones.SetScalarRange(reader.GetOutput().GetBlock(0).GetScalarRange())
 conesActor = vtkActor()

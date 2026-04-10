@@ -82,7 +82,7 @@ int TestFDSReader2(int argc, char* argv[])
   // Test extraction
   reader->AddSelector("/visibility_adjustment/Grids/MESH_0000001");
   reader->AddSelector("/visibility_adjustment/HRR/visibility_adjustment_hrr");
-  reader->AddSelector("/visibility_adjustment/Slices/STRUCTURED_SOOT");
+  reader->AddSelector("/visibility_adjustment/Slices/MESH_0000001_STRUCTURED_SOOT");
   reader->Update();
 
   vtkPartitionedDataSetCollection* output =
@@ -156,7 +156,8 @@ int TestFDSReader2(int argc, char* argv[])
   }
 
   // Test slice
-  nodeIds = outAssembly->GetDataSetIndices(outAssembly->FindFirstNodeWithName("STRUCTURED_SOOT"));
+  nodeIds = outAssembly->GetDataSetIndices(
+    outAssembly->FindFirstNodeWithName("MESH_0000001_STRUCTURED_SOOT"));
   auto slice = vtkRectilinearGrid::SafeDownCast(output->GetPartition(nodeIds[0], 0));
   if (!slice)
   {
@@ -197,7 +198,8 @@ int TestFDSReader2(int argc, char* argv[])
   reader->UpdateTimeStep(31.0);
   output = vtkPartitionedDataSetCollection::SafeDownCast(reader->GetOutput());
   outAssembly = output->GetDataAssembly();
-  nodeIds = outAssembly->GetDataSetIndices(outAssembly->FindFirstNodeWithName("STRUCTURED_SOOT"));
+  nodeIds = outAssembly->GetDataSetIndices(
+    outAssembly->FindFirstNodeWithName("MESH_0000001_STRUCTURED_SOOT"));
   slice = vtkRectilinearGrid::SafeDownCast(output->GetPartition(nodeIds[0], 0));
   if (!testValue(
         std::abs(slice->GetPointData()->GetArray("Values")->GetComponent(259, 0) - 3.29237) < 1e-5,

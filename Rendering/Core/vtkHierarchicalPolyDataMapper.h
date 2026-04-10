@@ -14,10 +14,13 @@
 #define vtkHierarchicalPolyDataMapper_h
 
 #include "vtkCompositePolyDataMapper.h"
+#include "vtkDeprecation.h"         // for VTK_DEPRECATED_IN_9_7_0
 #include "vtkRenderingCoreModule.h" // For export macro
 
 VTK_ABI_NAMESPACE_BEGIN
-class VTKRENDERINGCORE_EXPORT vtkHierarchicalPolyDataMapper : public vtkCompositePolyDataMapper
+class VTK_DEPRECATED_IN_9_7_0(
+  "Use vtkCompositePolyDataMapper") VTKRENDERINGCORE_EXPORT vtkHierarchicalPolyDataMapper
+  : public vtkCompositePolyDataMapper
 {
 
 public:
