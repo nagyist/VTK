@@ -278,7 +278,7 @@ int vtkWin32OutputWindow::Initialize()
   // Spawn a dedicated UI thread that creates the window and runs a message loop.
   vtkWin32OutputWindowUIThreadReady = false;
   vtkWin32OutputWindowUIThread =
-    std::thread(vtkWin32OutputWindowUIThreadFunc, this->GetWindowTitle());
+    std::thread(vtkWin32OutputWindowUIThreadFunc, this->GetWindowTitle(), this->ShowWindow);
   vtkWin32OutputWindowUIThread.detach();
 
   // Wait for the UI thread to finish creating the window
