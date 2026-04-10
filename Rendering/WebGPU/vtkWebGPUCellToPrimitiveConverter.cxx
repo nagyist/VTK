@@ -12,15 +12,8 @@
 #include "vtkCellType.h"
 #include "vtkObjectFactory.h"
 #include "vtkPolyData.h"
-#include "vtkSetGet.h"
-#include "vtkTimeStamp.h"
-#include "vtkType.h"
 #include "vtkWebGPUComputeBuffer.h"
 #include "vtkWebGPUComputePipeline.h"
-
-// STL includes
-#include <array>
-#include <numeric>
 
 VTK_ABI_NAMESPACE_BEGIN
 

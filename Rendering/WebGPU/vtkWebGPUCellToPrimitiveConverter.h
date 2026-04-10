@@ -26,6 +26,7 @@
 #include "vtkProperty.h"              // for VTK_SURFACE
 #include "vtkRenderingWebGPUModule.h" // for export macro
 #include "vtkSmartPointer.h"          // for vtkSmartPointer
+#include "vtkTimeStamp.h"             // for vtkTimeStamp
 
 #include "vtk_wgpu.h" // for wgpu::Buffer
 
