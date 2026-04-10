@@ -25,7 +25,6 @@
 #include "vtkPolyDataMapper.h"
 #include "vtkProperty.h"
 #include "vtkScalarsToColors.h"
-#include "vtkSetGet.h"
 #include "vtkSmartPointer.h"
 #include "vtkTimeStamp.h"
 #include "vtkWebGPUActor.h"
