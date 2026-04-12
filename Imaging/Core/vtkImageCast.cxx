@@ -6,6 +6,7 @@
 #include "vtkImageProgressIterator.h"
 #include "vtkInformation.h"
 #include "vtkInformationVector.h"
+#include "vtkMathUtilities.h"
 #include "vtkObjectFactory.h"
 #include "vtkStreamingDemandDrivenPipeline.h"
 
@@ -41,13 +42,8 @@ void vtkImageCastExecute(
   vtkImageIterator<IT> inIt(inData, outExt);
   vtkImageProgressIterator<OT> outIt(outData, outExt, self, id);
 
-  double typeMin, typeMax, val;
-  int clamp;
-
-  // for preventing overflow
-  typeMin = outData->GetScalarTypeMin();
-  typeMax = outData->GetScalarTypeMax();
-  clamp = self->GetClampOverflow();
+  // Clamp pixel values to the range of the output type.
+  int clamp = self->GetClampOverflow();
 
   // Loop through output pixels
   while (!outIt.IsAtEnd())
@@ -60,10 +56,8 @@ void vtkImageCastExecute(
       while (outSI != outSIEnd)
       {
         // Pixel operation
-        val = static_cast<double>(*inSI);
-        val = std::min(val, typeMax);
-        val = std::max(val, typeMin);
-        *outSI = static_cast<OT>(val);
+        double val = static_cast<double>(*inSI);
+        *outSI = vtkMathUtilities::SafeCastFromDouble<OT>(val);
         ++outSI;
         ++inSI;
       }

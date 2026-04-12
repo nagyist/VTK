@@ -6,6 +6,7 @@
 #include "vtkImageProgressIterator.h"
 #include "vtkInformation.h"
 #include "vtkInformationVector.h"
+#include "vtkMathUtilities.h"
 #include "vtkObjectFactory.h"
 #include "vtkStreamingDemandDrivenPipeline.h"
 
@@ -64,9 +65,7 @@ void vtkImageShiftScaleExecute(vtkImageShiftScale* self, vtkImageData* inData,
   double shift = self->GetShift();
   double scale = self->GetScale();
 
-  // Clamp pixel values within the range of the output type.
-  double typeMin = outData->GetScalarTypeMin();
-  double typeMax = outData->GetScalarTypeMax();
+  // Clamp pixel values to the range of the output type.
   int clamp = self->GetClampOverflow();
 
   // Loop through output pixels.
@@ -81,9 +80,7 @@ void vtkImageShiftScaleExecute(vtkImageShiftScale* self, vtkImageData* inData,
       {
         // Pixel operation
         double val = (static_cast<double>(*inSI) + shift) * scale;
-        val = std::min(val, typeMax);
-        val = std::max(val, typeMin);
-        *outSI = static_cast<OT>(val);
+        *outSI = vtkMathUtilities::SafeCastFromDouble<OT>(val);
         ++outSI;
         ++inSI;
       }
