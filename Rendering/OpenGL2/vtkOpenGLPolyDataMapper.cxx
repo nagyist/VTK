@@ -798,6 +798,13 @@ void vtkOpenGLPolyDataMapper::ReplaceShaderColor(
     colorImpl += "  vec3 ambientColor = ambientIntensity * vertexColorVSOutput.rgb;\n"
                  "  vec3 diffuseColor = diffuseIntensity * vertexColorVSOutput.rgb;\n"
                  "  float opacity = opacityUniform * vertexColorVSOutput.a;";
+
+    // PBR requires linear color space, we assume vertex colors are in sRGB space
+    if (actor->GetProperty()->GetInterpolation() == VTK_PBR)
+    {
+      colorImpl += "  ambientColor = pow(ambientColor, vec3(2.2));\n"
+                   "  diffuseColor = pow(diffuseColor, vec3(2.2));\n";
+    }
   }
   // handle point color texture map coloring
   else if (this->InterpolateScalarsBeforeMapping && this->ColorCoordinates &&
@@ -807,6 +814,13 @@ void vtkOpenGLPolyDataMapper::ReplaceShaderColor(
                  "  vec3 ambientColor = ambientIntensity * texColor.rgb;\n"
                  "  vec3 diffuseColor = diffuseIntensity * texColor.rgb;\n"
                  "  float opacity = opacityUniform * texColor.a;";
+
+    // PBR requires linear color space, we assume vertex color map is in sRGB space
+    if (actor->GetProperty()->GetInterpolation() == VTK_PBR)
+    {
+      colorImpl += "  ambientColor = pow(ambientColor, vec3(2.2));\n"
+                   "  diffuseColor = pow(diffuseColor, vec3(2.2));\n";
+    }
   }
   // are we doing cell scalar coloring by texture?
   else if (this->HaveCellScalars && !this->DrawingVertices && !this->PointPicking)
@@ -816,6 +830,13 @@ void vtkOpenGLPolyDataMapper::ReplaceShaderColor(
       "  vec3 ambientColor = ambientIntensity * texColor.rgb;\n"
       "  vec3 diffuseColor = diffuseIntensity * texColor.rgb;\n"
       "  float opacity = opacityUniform * texColor.a;";
+
+    // PBR requires linear color space, we assume cell color map is in sRGB space
+    if (actor->GetProperty()->GetInterpolation() == VTK_PBR)
+    {
+      colorImpl += "  ambientColor = pow(ambientColor, vec3(2.2));\n"
+                   "  diffuseColor = pow(diffuseColor, vec3(2.2));\n";
+    }
   }
   // just material but handle backfaceproperties
   else

@@ -59,6 +59,7 @@ vtk_add_test_cxx(vtkRenderingOpenGL2CxxTests tests
   TestPBREdgeTint.cxx
   TestPBRHdrEnvironment.cxx
   TestPBRAnisotropy.cxx
+  TestPBRColorMap.cxx,NO_DATA
   TestPBRColorMultiplier.cxx
   TestPBRIrradianceHDR.cxx
   TestPBRMapping.cxx
