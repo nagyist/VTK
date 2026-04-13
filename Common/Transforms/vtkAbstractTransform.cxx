@@ -236,6 +236,60 @@ void vtkAbstractTransform::TransformPointsNormalsVectors(vtkPoints* inPts, vtkPo
 }
 
 //------------------------------------------------------------------------------
+void vtkAbstractTransform::TransformVectors(vtkDataArray* inArray, vtkDataArray* outArray)
+{
+  this->Update();
+
+  vtkIdType inSize = inArray->GetNumberOfTuples();
+  vtkIdType outSize = outArray->GetNumberOfTuples();
+  outArray->SetNumberOfTuples(inSize + outSize);
+
+  double matrix[3][3];
+  double dummy_pt[3];
+  this->InternalTransformDerivative(dummy_pt, dummy_pt, matrix);
+
+  double tuple[3];
+  vtkSMPTools::For(0, inSize,
+    [&](vtkIdType ptId, vtkIdType endPtId)
+    {
+      for (; ptId < endPtId; ++ptId)
+      {
+        inArray->GetTuple(ptId, tuple);
+        vtkMath::Multiply3x3(matrix, tuple, tuple);
+        outArray->SetTuple(outSize + ptId, tuple);
+      }
+    });
+}
+
+//------------------------------------------------------------------------------
+void vtkAbstractTransform::TransformNormals(vtkDataArray* inArray, vtkDataArray* outArray)
+{
+  this->Update();
+
+  vtkIdType inSize = inArray->GetNumberOfTuples();
+  vtkIdType outSize = outArray->GetNumberOfTuples();
+  outArray->SetNumberOfTuples(inSize + outSize);
+
+  double matrix[3][3];
+  double dummy_pt[3];
+  this->InternalTransformDerivative(dummy_pt, dummy_pt, matrix);
+
+  double tuple[3];
+  vtkSMPTools::For(0, inSize,
+    [&](vtkIdType ptId, vtkIdType endPtId)
+    {
+      for (; ptId < endPtId; ++ptId)
+      {
+        inArray->GetTuple(ptId, tuple);
+        vtkMath::Transpose3x3(matrix, matrix);
+        vtkMath::LinearSolve3x3(matrix, tuple, tuple);
+        vtkMath::Normalize(tuple);
+        outArray->SetTuple(outSize + ptId, tuple);
+      }
+    });
+}
+
+//------------------------------------------------------------------------------
 vtkAbstractTransform* vtkAbstractTransform::GetInverse()
 {
   auto& internals = *(this->Internals);

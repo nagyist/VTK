@@ -10,6 +10,7 @@
 #include "vtkDataSetAttributes.h"
 #include "vtkGenericCell.h"
 #include "vtkInformation.h"
+#include "vtkInformationVector.h"
 #include "vtkPointData.h"
 #include "vtkPoints.h"
 #include "vtkStructuredCellArray.h"
@@ -644,6 +645,18 @@ vtkIdType vtkCartesianGrid::GetValueIndexForExtent(vtkDataArray* array, int exte
 {
   int tmp[3] = { extent[0], extent[2], extent[4] };
   return this->GetValueIndex(array, tmp);
+}
+
+//------------------------------------------------------------------------------
+vtkCartesianGrid* vtkCartesianGrid::GetData(vtkInformation* info)
+{
+  return info ? vtkCartesianGrid::SafeDownCast(info->Get(DATA_OBJECT())) : nullptr;
+}
+
+//------------------------------------------------------------------------------
+vtkCartesianGrid* vtkCartesianGrid::GetData(vtkInformationVector* v, int i)
+{
+  return vtkCartesianGrid::GetData(v->GetInformationObject(i));
 }
 
 VTK_ABI_NAMESPACE_END

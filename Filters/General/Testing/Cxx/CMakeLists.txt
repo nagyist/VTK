@@ -84,6 +84,7 @@ vtk_add_test_cxx(vtkFiltersGeneralCxxTests data_tests
   TestGradientAndVorticity.cxx,NO_VALID
   TestIconGlyphFilterGravity.cxx,LOOSE_VALID
   TestQuadraturePoints.cxx
+  TestTransformFilterCache.cxx,NO_VALID
   TestYoungsMaterialInterface.cxx
   )
 

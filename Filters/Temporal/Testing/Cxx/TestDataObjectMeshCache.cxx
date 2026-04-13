@@ -228,6 +228,20 @@ bool TestAttributesIds(TestPipelineInterface* pipeline)
     "AttributesIds: error when setting ids on inexisting attribute type.");
   vtkLogIf(ERROR, status.enabled(), "AttributesIds: inexisting id array should disable cache.");
 
+  cache->ClearOriginalIds();
+  vtkDataObjectMeshCache::CreateTemporaryOriginalIdsArrays(pipeline->GetFilterInputData());
+  cache->UpdateCache(pipeline->GetFilterInputData());
+  cache->AddOriginalIds(vtkDataObject::POINT, vtkDataObjectMeshCache::GetTemporaryIdsName());
+  expected.AttributesIdsExists = true;
+  status = cache->GetStatus();
+  vtkLogIf(ERROR, status != expected, "AttributesIds: error when using temporary ids.");
+
+  vtkDataObjectMeshCache::CleanupTemporaryOriginalIds(pipeline->GetFilterInputData());
+  cache->UpdateCache(pipeline->GetFilterInputData());
+  expected.AttributesIdsExists = false;
+  status = cache->GetStatus();
+  vtkLogIf(ERROR, status != expected, "AttributesIds: error after cleaning temporary ids.");
+
   return true;
 }
 

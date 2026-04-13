@@ -5,8 +5,6 @@
 #include "vtkHDFReader.h"
 
 #include "vtkAppendDataSets.h"
-#include "vtkAppendFilter.h"
-#include "vtkCellData.h"
 #include "vtkDataArray.h"
 #include "vtkDataSet.h"
 #include "vtkDoubleArray.h"
@@ -23,7 +21,7 @@
 #include "vtkPartitionedDataSet.h"
 #include "vtkPartitionedDataSetCollection.h"
 #include "vtkPointData.h"
-#include "vtkSphereSource.h"
+#include "vtkPolyData.h"
 #include "vtkStringFormatter.h"
 #include "vtkTestUtilities.h"
 #include "vtkTesting.h"
@@ -39,9 +37,7 @@
 
 #include <cstdlib>
 #include <iostream>
-#include <map>
 #include <string>
-#include <vector>
 
 namespace
 {

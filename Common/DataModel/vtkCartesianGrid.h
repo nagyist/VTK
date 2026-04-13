@@ -279,6 +279,14 @@ public:
   vtkIdType GetValueIndex(vtkDataArray* array, int x, int y, int z);
   ///@}
 
+  ///@{
+  /**
+   * Retrieve an instance of this class from an information object.
+   */
+  static vtkCartesianGrid* GetData(vtkInformation* info);
+  static vtkCartesianGrid* GetData(vtkInformationVector* v, int i = 0);
+  ///@}
+
 protected:
   vtkCartesianGrid();
   ~vtkCartesianGrid() override = default;

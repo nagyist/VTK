@@ -41,8 +41,8 @@ class vtkCompositeDataSet;
  * This helper relies on different elements:
  * - `Consumer`: a vtkObject using the helper. Any modifications on it invalidate cache.
  * - `OriginalDataObject`: the input vtkDataObject. Should be either a vtkDataSet
- *   or a composite of vtkDataSet. The helper looks for its MeshMTime.
- * - `Cache`: the output vtkDataObject containing the mesh to reuse (or a composite)
+ *   or a composite of vtkDataSet. The helper looks for its MeshMTime.
+ * - `Cache`: the output vtkDataObject containing the mesh to reuse (or a composite)
  * - `OriginalIds`: a list of original ids array name per attribute types,
  *   to forward from OriginalDataObject to Cache when asked to.
  *
@@ -54,11 +54,20 @@ class vtkCompositeDataSet;
  * should be a subset of the input. Support for `InterpolateAllocate`
  * is doable and may be added in the future.
  *
- * ## Requirements
+ * ## Requirements
  * The data arrays forwarding rely on GlobalIds arrays.
  *
  * When using vtkCompositeDataSet, every leaves should be of a supported
  * data set type.
+ *
+ * @warning usage with vtkCompositeDataPipeline
+ * The vtkCompositeDataPipeline updates the filter for each block.
+ * The filter cannot differentiate an update for a new block from an
+ * update with a new input. Trying to use the vtkDataObjectMeshCache in this context
+ * leads to cache invalidation at each call, because each block is considered as a new dataset.
+ * To properly setup vtkDataObjectMeshCache in a filter, vtkCompositeDataSet should
+ * be explicitly handled, so each RequestData can actually be interpreted as
+ * a new input data to process.
  */
 class VTKFILTERSTEMPORAL_EXPORT vtkDataObjectMeshCache : public vtkObject
 {
@@ -148,7 +157,7 @@ public:
   vtkSetSmartPointerMacro(Consumer, vtkAlgorithm);
 
   /**
-   * Set the original dataobject.
+   * Set the original dataobject.
    * The status becomes invalid if the original dataobject mesh is modified.
    * Original dataobject is also used to copy data arrays to output,
    * if OriginalIds are configured.
@@ -159,7 +168,7 @@ public:
   ///@}
 
   /**
-   * Original Ids.
+   * Original Ids.
    * When original ids are present for an attribute types, all arrays of this
    * attribute are forwarded to the output.
    * @sa CopyCacheToOutput
@@ -182,7 +191,50 @@ public:
    * @sa RemoveOriginalIds, AddOriginalIds
    */
   void ClearOriginalIds();
+
+  /**
+   * Add attribute in the forward list.
+   */
+  void ForwardAttribute(int attribute);
+
+  /**
+   * Preserve input attribute, i.e. forward the whole input arrays
+   * wihout reorder (original ids are not used).
+   * Default is false.
+   * @see AddOriginalIds, ForwardAttributes
+   */
+  ///@{
+  vtkSetMacro(PreserveAttributes, bool);
+  vtkGetMacro(PreserveAttributes, bool);
+  vtkBooleanMacro(PreserveAttributes, bool);
   ///@}
+
+  /**
+   * Return a default name for original ids.
+   */
+  static std::string GetTemporaryIdsName();
+
+  /**
+   * Add an ids array on underlying PointData and CellData.
+   * This is used by the vtkDataObjectMeshCache to forward
+   * attributes data from a new input to the cached mesh.
+   */
+  static void CreateTemporaryOriginalIdsArrays(vtkDataObject* object);
+
+  /**
+   * Cleanup the temporary array, as we do not want it to exists outside
+   * of this filter.
+   */
+  static void CleanupTemporaryOriginalIds(vtkDataObject* object);
+  ///@}
+
+  /**
+   * Return the mesh MTime for the given dataobject, as used for the Cache.
+   * If object is a vtkDataSet this is equivalent to vtkDataSet::GetMeshMTime()
+   * If object is a composite, return the max of each underlying dataset MeshMTime.
+   * Other types are ignored, a MTime of 0 is used.
+   */
+  static vtkMTimeType GetDataObjectMeshMTime(vtkDataObject* object);
 
   /**
    * Compute and returns the current cache status.
@@ -245,7 +297,7 @@ private:
   vtkMTimeType GetOriginalMeshTime() const;
 
   /**
-   * Return the number of datasets contained in dataobject.
+   * Return the number of datasets contained in dataobject.
    * Return 1 if dataobject is itself a vtkDataSet.
    * Return the number of non empty dataset leaves for a composite.
    * Return 0 otherwise.
@@ -278,6 +330,7 @@ private:
   vtkMTimeType CachedOriginalMeshTime = 0;
   vtkMTimeType CachedConsumerTime = 0;
   std::map<int, std::string> OriginalIdsName;
+  bool PreserveAttributes = false;
 };
 
 VTK_ABI_NAMESPACE_END

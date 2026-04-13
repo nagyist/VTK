@@ -3,6 +3,8 @@
 
 #include "vtkDataObjectMeshCache.h"
 
+#include "vtkAffineArray.h"
+#include "vtkCellData.h"
 #include "vtkCompositeDataSet.h"
 #include "vtkDataArrayRange.h"
 #include "vtkDataObjectTree.h"
@@ -11,6 +13,7 @@
 #include "vtkDataSetAttributes.h"
 #include "vtkIndexedArray.h"
 #include "vtkLogger.h"
+#include "vtkPointData.h"
 
 VTK_ABI_NAMESPACE_BEGIN
 vtkStandardNewMacro(vtkDataObjectMeshCache);
@@ -25,6 +28,22 @@ vtkStandardNewMacro(vtkDataObjectMeshCache);
  */
 #define vtkCacheLog(_verbosity, _msg)                                                              \
   vtkLogIf(_verbosity, this->Debug, << this->GetObjectDescription() << " " << _msg)
+
+namespace
+{
+constexpr const char* TEMP_ORIGINAL_IDS = "__original_ids__";
+
+//----------------------------------------------------------------------------
+void AddTemporaryIds(vtkDataSetAttributes* attributes, vtkIdType size)
+{
+  vtkNew<vtkAffineArray<vtkIdType>> ids;
+  ids->SetBackend(std::make_shared<vtkAffineImplicitBackend<vtkIdType>>(1, 0));
+  ids->SetNumberOfTuples(size);
+  ids->SetName(::TEMP_ORIGINAL_IDS);
+  attributes->AddArray(ids);
+}
+
+}
 
 /**
  * Interface to dispatch work over every contained vtkDataSet.
@@ -43,6 +62,7 @@ struct GenericDataObjectWorker
    */
   void Compute(vtkDataObject* dataobject)
   {
+    this->SkippedData = false;
     auto dataset = vtkDataSet::SafeDownCast(dataobject);
     if (dataset)
     {
@@ -172,6 +192,28 @@ struct ClearAttributesWorker : public GenericDataObjectWorker
   }
 };
 
+struct AddTemporaryIdsWorker : public GenericDataObjectWorker
+{
+  ~AddTemporaryIdsWorker() override = default;
+
+  void ComputeDataSet(vtkDataSet* leafDataSet) override
+  {
+    ::AddTemporaryIds(leafDataSet->GetPointData(), leafDataSet->GetNumberOfPoints());
+    ::AddTemporaryIds(leafDataSet->GetCellData(), leafDataSet->GetNumberOfCells());
+  }
+};
+
+struct RemoveTemporaryIdsWorker : public GenericDataObjectWorker
+{
+  ~RemoveTemporaryIdsWorker() override = default;
+
+  void ComputeDataSet(vtkDataSet* leafDataSet) override
+  {
+    leafDataSet->GetPointData()->RemoveArray(::TEMP_ORIGINAL_IDS);
+    leafDataSet->GetCellData()->RemoveArray(::TEMP_ORIGINAL_IDS);
+  }
+};
+
 /**
  * Worker to count number of datasets.
  */
@@ -182,6 +224,12 @@ struct NumberOfDataSetWorker : public GenericDataObjectWorker
   void ComputeDataSet(vtkDataSet* vtkNotUsed(dataset)) override { this->NumberOfDataSets++; }
   vtkIdType NumberOfDataSets = 0;
 };
+
+//------------------------------------------------------------------------------
+std::string vtkDataObjectMeshCache::GetTemporaryIdsName()
+{
+  return ::TEMP_ORIGINAL_IDS;
+}
 
 //------------------------------------------------------------------------------
 void vtkDataObjectMeshCache::PrintSelf(ostream& os, vtkIndent indent)
@@ -279,9 +327,18 @@ void vtkDataObjectMeshCache::AddOriginalIds(int attribute, const std::string& na
     return;
   }
 
-  this->OriginalIdsName[attribute] = name;
-  vtkCacheLog(INFO, "Set OriginalIds: " << attribute << " array name to " << name.c_str());
-  this->Modified();
+  if (this->OriginalIdsName[attribute] != name)
+  {
+    this->OriginalIdsName[attribute] = name;
+    vtkCacheLog(INFO, "Set OriginalIds: " << attribute << " array name to " << name.c_str());
+    this->Modified();
+  }
+}
+
+//------------------------------------------------------------------------------
+void vtkDataObjectMeshCache::ForwardAttribute(int attribute)
+{
+  this->AddOriginalIds(attribute, ::TEMP_ORIGINAL_IDS);
 }
 
 //------------------------------------------------------------------------------
@@ -296,6 +353,20 @@ void vtkDataObjectMeshCache::RemoveOriginalIds(int attribute)
   this->OriginalIdsName.erase(attribute);
   vtkCacheLog(INFO, "Remove OriginalIdsName: " << attribute);
   this->Modified();
+}
+
+//----------------------------------------------------------------------------
+void vtkDataObjectMeshCache::CreateTemporaryOriginalIdsArrays(vtkDataObject* object)
+{
+  AddTemporaryIdsWorker worker;
+  worker.Compute(object);
+}
+
+//----------------------------------------------------------------------------
+void vtkDataObjectMeshCache::CleanupTemporaryOriginalIds(vtkDataObject* object)
+{
+  RemoveTemporaryIdsWorker worker;
+  worker.Compute(object);
 }
 
 //------------------------------------------------------------------------------
@@ -344,9 +415,7 @@ vtkIdType vtkDataObjectMeshCache::GetNumberOfDataSets(vtkDataObject* dataobject)
 //------------------------------------------------------------------------------
 vtkMTimeType vtkDataObjectMeshCache::GetOriginalMeshTime() const
 {
-  MeshMTimeWorker meshtime;
-  meshtime.Compute(this->GetOriginalDataObject());
-  return meshtime.MeshTime;
+  return vtkDataObjectMeshCache::GetDataObjectMeshMTime(this->GetOriginalDataObject());
 }
 
 //------------------------------------------------------------------------------
@@ -568,6 +637,13 @@ void vtkDataObjectMeshCache::ForwardAttributes(
     return;
   }
 
+  if (this->PreserveAttributes)
+  {
+    vtkCacheLog(INFO, "ShallowCopy Attribute");
+    outAttribute->DeepCopy(inAttribute);
+    return;
+  }
+
   outAttribute->CopyAllOn();
   outAttribute->CopyAllocate(inAttribute);
 
@@ -607,6 +683,14 @@ void vtkDataObjectMeshCache::ClearAttributes(vtkDataObject* dataobject)
 bool vtkDataObjectMeshCache::HasConsumerNoInputPort() const
 {
   return this->Consumer->GetNumberOfInputPorts() == 0;
+}
+
+//------------------------------------------------------------------------------
+vtkMTimeType vtkDataObjectMeshCache::GetDataObjectMeshMTime(vtkDataObject* object)
+{
+  MeshMTimeWorker meshtime;
+  meshtime.Compute(object);
+  return meshtime.MeshTime;
 }
 
 VTK_ABI_NAMESPACE_END
