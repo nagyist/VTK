@@ -36,7 +36,7 @@ vtk_object_factory_configure(
   HEADER_FILE vtk_object_factory_header
   EXPORT_MACRO "VTKRENDERINGRAYTRACING_EXPORT")
 
-option(VTK_ENABLE_OSPRAY "Enable OSPRay RayTracing backend" ON)
+option(VTK_ENABLE_OSPRAY "Enable OSPRay RayTracing backend" OFF)
 cmake_dependent_option(VTKOSPRAY_ENABLE_DENOISER
   "build OSPRay Renderer using OpenImageDenoise" OFF
   "VTK_ENABLE_OSPRAY" OFF)
