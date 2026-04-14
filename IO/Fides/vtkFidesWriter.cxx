@@ -26,7 +26,11 @@
 #include "vtkMPIController.h"
 #endif
 
-#include <fides/DataSetWriter.h>
+// Fides includes
+#include <vtk_fides.h>
+// clang-format off
+#include VTK_FIDES(fides/DataSetWriter.h)
+// clang-format on
 
 #include <viskores/cont/DataSet.h>
 #include <viskores/cont/PartitionedDataSet.h>

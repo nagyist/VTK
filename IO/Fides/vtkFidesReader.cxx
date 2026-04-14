@@ -20,7 +20,11 @@
 #include "vtkmlib/UnstructuredGridConverter.h"
 #include "vtksys/SystemTools.hxx"
 
-#include <fides/DataSetReader.h>
+// Fides includes
+#include <vtk_fides.h>
+// clang-format off
+#include VTK_FIDES(fides/DataSetReader.h)
+// clang-format on
 
 #include <viskores/filter/clean_grid/CleanGrid.h>
 
