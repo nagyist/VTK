@@ -127,7 +127,7 @@ private:
 
   // Hide Selection functionality since, AMR only support levels
   vtkDataAssembly* GetAssembly() override { return nullptr; }
-  int GetAssemblyTag() override { return 0; }
+  int GetAssemblyTag() VTK_FUTURE_CONST override { return 0; }
   bool AddSelector(const char* vtkNotUsed(selector)) override { return false; }
   void ClearSelectors() override {}
   void SetSelector(const char* vtkNotUsed(selector)) override {}
