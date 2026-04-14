@@ -288,6 +288,14 @@ another pass of comment or acknowledge their approval in some form.
 Please be swift to address or discuss comments, it will increase
 the speed at which your changes will be merged.
 
+### Infrastructure maintainers ###
+
+For specific questions about an infrastructure issue, you can tag the relevant [subgroup](https://gitlab.kitware.com/utils/maintainers/):
+
+- `@utils/maintainers/ci` : to tag developers who maintains the CI.
+- `@utils/maintainers/dockerhub` : to tag developers allowed to push new docker images on dockerhub.
+- `@utils/maintainers/bypass-vtk-vtk` : to tag developers allowed to provide a bypass token to merge a MR without running all the CI.
+
 ### Comments Formatting ###
 
 Comments use [GitLab Flavored Markdown][] for formatting.  See GitLab
