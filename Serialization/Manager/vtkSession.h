@@ -539,7 +539,8 @@ extern "C"
     vtkSession session, vtkObjectHandle object, unsigned long tag);
 
   /**
-   * Remove all observers from the given object in the session.
+   * Remove all observers from the given object in the session. This method only removes observers
+   * added through the vtkSessionAddObserver method.
    * @param session The session to remove the observer from. The session must be created using
    * vtkCreateSession.
    * @param object The object to remove the observers from. The object must be registered using
@@ -551,7 +552,8 @@ extern "C"
     vtkSession session, vtkObjectHandle object);
 
   /**
-   * Remove all observers from all objects in the session.
+   * Remove all observers from all objects in the session. This method only removes observers
+   * added through the vtkSessionAddObserver method.
    * @param session The session to remove the observers from. The session must be created using
    * vtkCreateSession.
    */
