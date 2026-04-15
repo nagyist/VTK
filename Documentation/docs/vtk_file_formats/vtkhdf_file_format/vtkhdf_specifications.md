@@ -501,6 +501,7 @@ digraph G {
     DepthPerTree [label="DepthPerTree", shape=Mrecord, fillcolor=lightgrey];
     NumberOfTrees [label="NumberOfTrees", shape=Mrecord, fillcolor=lightgrey];
     NumberOfDepths [label="NumberOfDepths", shape=Mrecord, fillcolor=lightgrey];
+    NumberOfCells [label="NumberOfCells", shape=Mrecord, fillcolor=lightgrey];
     Mask [label="Mask", shape=Mrecord, fillcolor=lightgrey];
 
     Values [label="Values", shape=Mrecord, fillcolor=lightgrey];
@@ -526,6 +527,7 @@ digraph G {
     VTKHDF -> DepthPerTree;
     VTKHDF -> NumberOfTrees;
     VTKHDF -> NumberOfDepths;
+    VTKHDF -> NumberOfCells;
     VTKHDF -> Mask;
     Steps -> Values;
     Steps -> XCoordinatesOffsets;

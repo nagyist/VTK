@@ -40,7 +40,7 @@ Here is the list of supported feature which doesn't depends on a VTK data type:
 
 | VTK Data Type                   | vtkHDFReader    |vtkHDFWriter    |
 | ------------------------------- | --------------- |--------------- |
-| vtkHyperTreeGrid                | supported       | not supported  |
+| vtkHyperTreeGrid                | supported       | supported      |
 | vtkImageData                    | supported       | not supported  |
 | vtkMultiBlockDataSet            | supported       | supported      |
 | vtkPartitionedDataSet           | supported       | supported      |
