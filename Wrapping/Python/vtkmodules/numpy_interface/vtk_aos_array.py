@@ -6,6 +6,8 @@ for all vtkAOSDataArrayTemplate instantiations and concrete AOS subclasses
 automatically have numpy-compatible operations.  The single contiguous
 buffer is exposed as a zero-copy numpy array view.
 """
+import warnings
+
 import numpy
 
 from ..vtkCommonCore import vtkCommand
@@ -185,11 +187,23 @@ class VTKAOSArray(VTKDataArrayMixin):
         self._array_cache = value
 
     def _init_array_view(self):
-        """Extract a zero-copy numpy array view from the VTK buffer."""
-        if self.GetNumberOfTuples() == 0:
+        """Extract a zero-copy numpy array view from the VTK buffer.
+
+        Source the buffer protocol from the underlying ``vtkBuffer`` rather
+        than from ``self`` — numpy would otherwise stash a reference to the
+        array in its internal ``managedbuffer``, and since ``managedbuffer``
+        is not GC-tracked the resulting ``array → _array_cache → managedbuffer
+        → array`` cycle is uncollectable.
+        """
+        nt = self.GetNumberOfTuples()
+        if nt == 0:
             # Don't cache — array may be populated later
             return
-        self._array_cache = numpy_support.vtk_to_numpy(self)
+        buf = self.GetBuffer()
+        nc = self.GetNumberOfComponents()
+        dtype = numpy_support.get_numpy_array_type(self.GetDataType())
+        flat = numpy.frombuffer(buf, dtype=dtype, count=nt * nc)
+        self._array_cache = flat if nc == 1 else flat.reshape(nt, nc)
         self._setup_observer()
 
     def _setup_observer(self):
@@ -199,6 +213,14 @@ class VTKAOSArray(VTKDataArrayMixin):
         observer_id_holder = [None]
 
         def on_buffer_changed(vtk_obj, event):
+            # Warn once: any external numpy view handed out via __array__
+            # now references stale memory after an in-place Reallocate.
+            warnings.warn(
+                "The underlying VTK array has reallocated its buffer. "
+                "Any numpy view previously obtained from this array is now "
+                "stale and points to invalid memory. Please retrieve a "
+                "fresh view from the array.",
+                RuntimeWarning, stacklevel=2)
             vtk_obj._array_cache = _UNINITIALIZED  # invalidate
             vtk_obj._observer_id = None
             if observer_id_holder[0] is not None:
