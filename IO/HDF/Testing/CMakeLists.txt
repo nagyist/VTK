@@ -91,6 +91,7 @@ vtk_module_test_data(
 
   Data/vtkHDF/sanitization.vtu
 
+  Data/vtkHDF/nocells_part.vtkhdf
   Data/vtkHDF/null_term_string.vtkhdf
   Data/vtkHDF/utf8_string.vtkhdf
   Data/vtkHDF/test_multiblock_static_multipiece.vtkhdf

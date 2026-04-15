@@ -8,6 +8,8 @@
 #include "vtkHyperTreeGridSource.h"
 #include "vtkImageData.h"
 #include "vtkInformation.h"
+#include "vtkMultiBlockDataSet.h"
+#include "vtkMultiPieceDataSet.h"
 #include "vtkNew.h"
 #include "vtkOverlappingAMR.h"
 #include "vtkPartitionedDataSet.h"
@@ -179,6 +181,31 @@ int TestUnstructuredGrid(const std::string& dataRoot, bool parallel)
   {
     return !vtkTestUtilities::CompareDataObjects(reader->GetOutputDataObject(0), expectedData);
   }
+}
+
+//----------------------------------------------------------------------------
+int TestMultiUGNoCellsPiece(const std::string& dataRoot)
+{
+  // Test file contains 2 UG blocks containing 2 pieces in a Multiblock.
+  // Assert that pieces without cells are read correctly and don't show -1 cells as before
+  // See https://gitlab.kitware.com/vtk/vtk/-/work_items/19923
+  std::string fileName = dataRoot + "/Data/vtkHDF/nocells_part.vtkhdf";
+  vtkNew<vtkHDFReader> reader;
+
+  reader->SetFileName(fileName.c_str());
+  reader->Update();
+
+  auto mb = vtkMultiBlockDataSet::SafeDownCast(reader->GetOutputDataObject(0));
+  auto mp = vtkMultiPieceDataSet::SafeDownCast(mb->GetBlock(0));
+  auto ug = vtkUnstructuredGrid::SafeDownCast(mp->GetPieceAsDataObject(1));
+  if (ug->GetNumberOfCells() != 0)
+  {
+    std::cerr << "Error: expected 0 cells in unstructured grid but got " << ug->GetNumberOfCells()
+              << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  return EXIT_SUCCESS;
 }
 
 //----------------------------------------------------------------------------
@@ -624,6 +651,7 @@ int TestHDFReader(int argc, char* argv[])
   failure |= TestUnstructuredGrid(dataRoot, false);
   failure |= TestUnstructuredGridPolyhedron(dataRoot);
   failure |= TestUnstructuredGrid(dataRoot, true);
+  failure |= TestMultiUGNoCellsPiece(dataRoot);
   failure |= TestPolyData(dataRoot);
   failure |= TestPolyDataStream(dataRoot);
   failure |= TestNullTerminatedString(dataRoot);
