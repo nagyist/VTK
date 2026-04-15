@@ -38,3 +38,7 @@ reimplementation.
 
 A new argument have been added to vtkHDFUtilities::Open
 to suppress all console output on error. The previous version has been deprecated.
+
+## vtkHyperTreeGrid support in vtkHDFWriter
+
+`vtkHDFWriter` now properly supports the HyperTreeGrid data model. It can write partitioned, temporal and distributed data.
