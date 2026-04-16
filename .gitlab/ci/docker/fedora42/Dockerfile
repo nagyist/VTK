@@ -31,6 +31,9 @@ RUN sh /root/install_anari_helide.sh
 COPY install_openusd.sh /root/install_openusd.sh
 RUN sh /root/install_openusd.sh
 
+COPY install_openvdb.sh /root/install_openvdb.sh
+RUN sh /root/install_openvdb.sh
+
 # XXX(vpn): no stable URL for use in OptiX and MDL SDKs
 # COPY install_visrtx.sh /root/install_visrtx.sh
 # RUN sh /root/install_visrtx.sh

@@ -37,8 +37,8 @@ dnf install -y --setopt=install_weak_deps=False \
     boost-devel postgresql-server-devel postgresql-private-devel \
     mariadb-devel libiodbc-devel PDAL-devel liblas-devel openslide-devel \
     libarchive-devel freeglut-devel sqlite-devel PEGTL-devel cgnslib-devel \
-    proj-devel wkhtmltopdf cli11-devel fmt-devel openvdb-devel json-devel \
-    openxr openxr-devel libscn-devel
+    proj-devel wkhtmltopdf cli11-devel fmt-devel tbb-devel json-devel \
+    openxr openxr-devel libscn-devel blosc-devel
 
 # Python dependencies
 dnf install -y --setopt=install_weak_deps=False \

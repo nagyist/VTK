@@ -1,4 +1,4 @@
-# Resolve the OpenVDB external dependency
+# Resolve the NanoVDB external dependency
 find_path(OpenVDB_CMAKE_PATH
   NAMES FindOpenVDB.cmake
   DOC "Path to OpenVDB CMake files")
@@ -9,16 +9,21 @@ list(INSERT CMAKE_MODULE_PATH 0
 vtk_module_find_package(PRIVATE_IF_SHARED
   PACKAGE OpenVDB
   COMPONENTS
-    openvdb)
+    nanovdb)
 
 set(classes
-  vtkOpenVDBWriter
-  vtkOpenVDBReader)
+  vtkNanoVDBWriter)
 
-vtk_module_add_module(VTK::IOOpenVDB
+vtk_module_add_module(VTK::IONanoVDB
   CLASSES ${classes})
-vtk_module_link(VTK::IOOpenVDB
+
+vtk_module_link(VTK::IONanoVDB
   NO_KIT_EXPORT_IF_SHARED
   PRIVATE
-    OpenVDB::openvdb)
-vtk_add_test_mangling(VTK::IOOpenVDB)
+    OpenVDB::nanovdb)
+
+vtk_module_include(VTK::IONanoVDB
+  PRIVATE
+    ${OpenVDB_nanovdb_INCLUDE_DIR})
+
+vtk_add_test_mangling(VTK::IONanoVDB)

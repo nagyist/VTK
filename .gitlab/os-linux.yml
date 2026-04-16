@@ -370,7 +370,7 @@
 
 .fedora42:
     extends: .linux
-    image: "kitware/vtk:ci-fedora42-20251130"
+    image: "kitware/vtk:ci-fedora42-20260409"
 
 .fedora42_x86_64:
     extends: .fedora42
