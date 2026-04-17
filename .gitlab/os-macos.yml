@@ -281,7 +281,9 @@
     script:
         - *before_script_macos
         - *before_script_macos_deps
-        - "$DEVELOPER_DIR/Library/Frameworks/Python3.framework/Versions/Current/bin/python3 -m venv build/ci-venv"
+        - env "CMAKE_CONFIGURATION=macos314_$(uname -m)" cmake -P .gitlab/ci/download_wheel_python.cmake
+        - export PYTHON_PREFIX=$GIT_CLONE_PATH/.gitlab/python/Python.framework/Versions/Current
+        - "$PYTHON_PREFIX/bin/python3 -m venv build/ci-venv"
         - . build/ci-venv/bin/activate
         - PYTHON_VERSION_SUFFIX=`python -c 'import sys;print(f"{sys.version_info[0]}.{sys.version_info[1]}")'`
         - pip install -r $PWD/.gitlab/ci/requirements-wheel$PYTHON_VERSION_SUFFIX-test.txt
@@ -294,7 +296,9 @@
     script:
         - *before_script_macos
         - *before_script_macos_deps
-        - PYTHON_VERSION_SUFFIX=`"$DEVELOPER_DIR/Library/Frameworks/Python3.framework/Versions/Current/bin/python3" -c 'import sys;print(f"{sys.version_info[0]}.{sys.version_info[1]}")'`
+        - env "CMAKE_CONFIGURATION=macos314_$(uname -m)" cmake -P .gitlab/ci/download_wheel_python.cmake
+        - export PYTHON_PREFIX=$GIT_CLONE_PATH/.gitlab/python/Python.framework/Versions/Current
+        - PYTHON_VERSION_SUFFIX=`"$PYTHON_PREFIX/bin/python3" -c 'import sys;print(f"{sys.version_info[0]}.{sys.version_info[1]}")'`
         # Reuse the venv from the build step (avoids version changes between
         # build and testing).
         # This is set up manually because venv activate does not set

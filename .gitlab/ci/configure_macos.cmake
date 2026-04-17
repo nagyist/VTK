@@ -32,8 +32,17 @@ set(VTK_ENABLE_CATALYST OFF CACHE BOOL "") # catalyst
 # vtk issue: https://gitlab.kitware.com/vtk/vtk/-/issues/19903
 set(VTK_USE_PCH OFF CACHE BOOL "")
 
-# Add rpath entries for Xcode frameworks.
-set(CMAKE_BUILD_RPATH "$ENV{DEVELOPER_DIR}/Library/Frameworks" CACHE STRING "")
-set(CMAKE_INSTALL_RPATH "$ENV{DEVELOPER_DIR}/Library/Frameworks" CACHE STRING "")
+set(rpaths
+  # Add rpath entries for Xcode frameworks.
+  "$ENV{DEVELOPER_DIR}/Library/Frameworks")
+
+if ("$ENV{CMAKE_CONFIGURATION}" MATCHES "python")
+  list(APPEND rpaths
+    # Add rpath entry for the CI-downloaded Python.
+    "$ENV{GIT_CLONE_PATH}/.gitlab/python/Python.framework")
+endif ()
+
+set(CMAKE_BUILD_RPATH "${rpaths}" CACHE STRING "")
+set(CMAKE_INSTALL_RPATH "${rpaths}" CACHE STRING "")
 
 include("${CMAKE_CURRENT_LIST_DIR}/configure_common.cmake")
