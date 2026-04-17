@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) Ken Martin, Will Schroeder, Bill Lorensen
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include "HDFTestUtilities.h"
 #include "vtkAppendDataSets.h"
 #include "vtkCleanUnstructuredGrid.h"
 #include "vtkDataAssemblyUtilities.h"
@@ -34,10 +33,6 @@
 #include "vtkUnstructuredGrid.h"
 #include "vtkWarpScalar.h"
 
-namespace HDFTestUtilities
-{
-vtkStandardNewMacro(vtkAddAssembly);
-}
 namespace
 {
 struct WriterConfigOptions
@@ -296,15 +291,9 @@ bool TestTemporalComposite(const std::string& tempDir, const std::string& dataRo
     groupDataSets->SetInputName(i, baseNames[i].c_str());
   }
 
-  // vtkGroupDataSetsFilter does not create an assembly for PDC, but the VTKHDF requires one.
-  vtkNew<HDFTestUtilities::vtkAddAssembly> addAssembly;
-  addAssembly->SetInputConnection(groupDataSets->GetOutputPort());
-
   // Write out the composite temporal dataset
   vtkNew<vtkHDFWriter> HDFWriterGrouped;
-  HDFWriterGrouped->SetInputConnection(compositeType == VTK_PARTITIONED_DATA_SET_COLLECTION
-      ? addAssembly->GetOutputPort()
-      : groupDataSets->GetOutputPort());
+  HDFWriterGrouped->SetInputConnection(groupDataSets->GetOutputPort());
 
   std::string tempPath = tempDir + "/HDFWriter_";
   tempPath += "composite" + vtk::to_string(compositeType) + ".vtkhdf";

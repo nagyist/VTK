@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) Ken Martin, Will Schroeder, Bill Lorensen
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include "HDFTestUtilities.h"
-
 #include "vtkAppendDataSets.h"
 #include "vtkDataAssemblyUtilities.h"
 #include "vtkDataSetSurfaceFilter.h"
@@ -40,11 +38,6 @@
 
 #include <cstddef>
 #include <iostream>
-
-namespace HDFTestUtilities
-{
-vtkStandardNewMacro(vtkAddAssembly);
-}
 
 namespace
 {
@@ -162,18 +155,13 @@ bool TestCompositeDistributedObject(
     vtkGroupDataSetsFilter::SafeDownCast(::SetupCompositePipeline(compositeType));
   group->UpdatePiece(myRank, nbRanks, 0);
 
-  vtkNew<HDFTestUtilities::vtkAddAssembly> addAssembly;
-  addAssembly->SetInputConnection(group->GetOutputPort());
-
   // Write it to disk
   std::string prefix = tempDir + "/parallel_composite_" + vtk::to_string(compositeType);
   std::string filePath = prefix + ".vtkhdf";
   std::string filePathPart = prefix + "_part" + vtk::to_string(myRank) + ".vtkhdf";
 
   vtkNew<vtkHDFWriter> writer;
-  writer->SetInputConnection(compositeType == VTK_PARTITIONED_DATA_SET_COLLECTION
-      ? addAssembly->GetOutputPort()
-      : group->GetOutputPort());
+  writer->SetInputConnection(group->GetOutputPort());
   writer->SetFileName(filePath.c_str());
   writer->Write();
 
@@ -220,10 +208,13 @@ bool TestCompositeDistributedObject(
   else
   {
     auto originalPiece =
-      vtkPartitionedDataSetCollection::SafeDownCast(addAssembly->GetOutputDataObject(0));
+      vtkPartitionedDataSetCollection::SafeDownCast(group->GetOutputDataObject(0));
     auto readPart =
       vtkPartitionedDataSetCollection::SafeDownCast(readerPart->GetOutputDataObject(0));
     auto readTotal = vtkPartitionedDataSetCollection::SafeDownCast(reader->GetOutputDataObject(0));
+
+    // Original has no assembly set, but VTKHDF writer sets one by default. Copy it.
+    originalPiece->SetDataAssembly(readPart->GetDataAssembly());
 
     vtkPartitionedDataSet* ugPD = readTotal->GetPartitionedDataSet(0);
     vtkPartitionedDataSet* pdPD = readTotal->GetPartitionedDataSet(1);
@@ -414,9 +405,6 @@ bool TestCompositeTemporalDistributedObject(
     vtkGroupDataSetsFilter::SafeDownCast(::SetupCompositePipeline(compositeType));
   group->UpdatePiece(myRank, nbRanks, 0);
 
-  vtkNew<HDFTestUtilities::vtkAddAssembly> addAssembly;
-  addAssembly->SetInputConnection(group->GetOutputPort());
-
   // Generate several time steps
   vtkNew<vtkGenerateTimeSteps> generateTimeSteps;
   const std::array timeValues{ 1.0, 3.0, 5.0 };
@@ -424,9 +412,7 @@ bool TestCompositeTemporalDistributedObject(
   {
     generateTimeSteps->AddTimeStepValue(value);
   }
-  generateTimeSteps->SetInputConnection(compositeType == VTK_PARTITIONED_DATA_SET_COLLECTION
-      ? addAssembly->GetOutputPort()
-      : group->GetOutputPort());
+  generateTimeSteps->SetInputConnection(group->GetOutputPort());
 
   // Generate a time-varying point field: use default ParaView weights
   vtkNew<vtkSpatioTemporalHarmonicsAttribute> harmonics;
