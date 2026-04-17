@@ -117,8 +117,7 @@ class TestNumpySupport(Testing.vtkTest):
 
     def testNonContiguousArray(self):
         "Test if the non contiguous array are supported"
-        a = numpy.array(range(1, 19), 'd')
-        a.shape = (3, 6)
+        a = numpy.array(range(1, 19), 'd').reshape((3, 6))
         x = a[::2, ::2]
         vtk_array = numpy_to_vtk(x)
         self.assertEqual(vtk_array.GetTuple3(0), (1., 3., 5.))
