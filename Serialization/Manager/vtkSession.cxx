@@ -294,6 +294,11 @@ extern "C"
     if (auto* renderWindow = vtkRenderWindow::SafeDownCast(objectImpl))
     {
       renderWindow->SetSize(width, height);
+      // Also set the size on interactor
+      if (auto* interactor = renderWindow->GetInteractor())
+      {
+        interactor->SetSize(width, height);
+      }
       return vtkSessionResultSuccess;
     }
     else if (objectImpl != nullptr)
