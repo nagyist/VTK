@@ -9,12 +9,12 @@ from vtkmodules.numpy_interface.vtk_structured_point_array import (
 
 
 def test_image_data_auto_detection():
-    """Test that accessing vtkImageData.points returns VTKStructuredPointArray."""
+    """Test that accessing vtkImageData.points.data returns VTKStructuredPointArray."""
     img = vtkImageData()
     img.SetDimensions(3, 4, 5)
     img.SetOrigin(1.0, 2.0, 3.0)
     img.SetSpacing(0.5, 1.0, 1.5)
-    points = img.points
+    points = img.points.data
     assert isinstance(points, VTKStructuredPointArray), \
         f"Expected VTKStructuredPointArray, got {type(points)}"
     return True
@@ -41,7 +41,7 @@ def test_rectilinear_grid():
     rg.SetYCoordinates(ycoords)
     rg.SetZCoordinates(zcoords)
 
-    points = rg.points
+    points = rg.points.data
 
     assert isinstance(points, VTKStructuredPointArray), \
         f"Expected VTKStructuredPointArray, got {type(points)}"
@@ -59,7 +59,7 @@ def test_shape_len_dtype():
     img.SetDimensions(3, 4, 5)
     img.SetOrigin(0.0, 0.0, 0.0)
     img.SetSpacing(1.0, 1.0, 1.0)
-    points = img.points
+    points = img.points.data
 
     assert points.shape == (3 * 4 * 5, 3), f"shape mismatch: {points.shape}"
     assert len(points) == 60, f"len mismatch: {len(points)}"
@@ -74,7 +74,7 @@ def test_materialization():
     img.SetDimensions(3, 4, 2)
     img.SetOrigin(0.0, 0.0, 0.0)
     img.SetSpacing(1.0, 1.0, 1.0)
-    points = img.points
+    points = img.points.data
 
     materialized = np.array(points)
     assert materialized.shape == (3 * 4 * 2, 3), f"shape: {materialized.shape}"
@@ -100,7 +100,7 @@ def test_single_point_indexing():
     img.SetDimensions(3, 4, 5)
     img.SetOrigin(1.0, 2.0, 3.0)
     img.SetSpacing(0.5, 1.0, 1.5)
-    points = img.points
+    points = img.points.data
 
     materialized = np.array(points)
 
@@ -116,7 +116,7 @@ def test_slice_indexing():
     img.SetDimensions(3, 4, 5)
     img.SetOrigin(0.0, 0.0, 0.0)
     img.SetSpacing(1.0, 1.0, 1.0)
-    points = img.points
+    points = img.points.data
 
     materialized = np.array(points)
     sliced = points[0:5]
@@ -130,7 +130,7 @@ def test_ufunc_stays_lazy():
     img.SetDimensions(3, 4, 5)
     img.SetOrigin(1.0, 2.0, 3.0)
     img.SetSpacing(1.0, 1.0, 1.0)
-    points = img.points
+    points = img.points.data
 
     result = np.sqrt(points)
     assert isinstance(result, VTKStructuredPointArray), \
@@ -147,7 +147,7 @@ def test_scalar_arithmetic_stays_lazy():
     img.SetDimensions(3, 4, 5)
     img.SetOrigin(1.0, 2.0, 3.0)
     img.SetSpacing(1.0, 1.0, 1.0)
-    points = img.points
+    points = img.points.data
 
     result_add = points + 10
     assert isinstance(result_add, VTKStructuredPointArray), \
@@ -169,7 +169,7 @@ def test_reductions():
     img.SetDimensions(3, 4, 5)
     img.SetOrigin(1.0, 2.0, 3.0)
     img.SetSpacing(0.5, 1.0, 1.5)
-    points = img.points
+    points = img.points.data
 
     materialized = np.array(points)
 
@@ -197,7 +197,7 @@ def test_ufunc_arithmetic_match_numpy():
     img.SetDimensions(4, 3, 2)
     img.SetOrigin(1.0, 2.0, 3.0)
     img.SetSpacing(0.5, 1.0, 1.5)
-    points = img.points
+    points = img.points.data
 
     materialized = np.array(points)
 
@@ -225,7 +225,7 @@ def test_column_indexing():
     img.SetDimensions(3, 4, 5)
     img.SetOrigin(1.0, 2.0, 3.0)
     img.SetSpacing(0.5, 1.0, 1.5)
-    points = img.points
+    points = img.points.data
 
     x_col = points[:, 0]
     assert isinstance(x_col, VTKStructuredAxisArray), \
@@ -242,17 +242,14 @@ def test_column_indexing():
 
 
 def test_mixin_on_raw_array():
-    """Test that the VTK class mixin is applied to vtkStructuredPointArray."""
-    from vtkmodules.numpy_interface.vtk_structured_point_array import (
-        VTKStructuredPointArrayMixin as Mixin,
-    )
+    """Test that VTKStructuredPointArray is applied to vtkStructuredPointArray."""
     img = vtkImageData()
     img.SetDimensions(3, 4, 5)
     img.SetOrigin(1.0, 2.0, 3.0)
     img.SetSpacing(0.5, 1.0, 1.5)
 
     arr = img.GetPoints().GetData()
-    assert isinstance(arr, Mixin), \
+    assert isinstance(arr, VTKStructuredPointArray), \
         f"Expected VTKStructuredPointArray, got {type(arr)}"
     assert type(arr).__name__ == 'VTKStructuredPointArray', \
         f"Expected class name VTKStructuredPointArray, got {type(arr).__name__}"
@@ -271,10 +268,9 @@ def test_mixin_on_raw_array():
 
 
 def test_mixin_with_dataset():
-    """Test mixin lazy operations via backend axis arrays."""
+    """Test lazy operations via backend axis arrays."""
     from vtkmodules.numpy_interface.vtk_structured_point_array import (
-        VTKStructuredPointArrayMixin as Mixin, VTKStructuredAxisArray,
-        VTKStructuredPointArray,
+        VTKStructuredAxisArray,
     )
     img = vtkImageData()
     img.SetDimensions(3, 4, 5)
