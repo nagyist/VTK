@@ -69,7 +69,11 @@ private:
 
   /**
    * Build a local polydata containing allgathered selection IDs.
-   * Returns nullptr if no selection or single process.
+   * Returns nullptr if the input selection is null. Returns the
+   * input unchanged on a single-process controller or when no ID
+   * array is found. Otherwise returns a newly allocated polydata
+   * whose point data holds the sorted, deduplicated union of
+   * selection IDs from all ranks.
    */
   vtkSmartPointer<vtkDataSet> AllGatherSelection(vtkDataSet* selection);
 

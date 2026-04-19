@@ -13,6 +13,7 @@
 #include "vtkObjectFactory.h"
 #include "vtkPartitionedDataSet.h"
 #include "vtkPointData.h"
+#include "vtkPoints.h"
 #include "vtkPolyData.h"
 #include "vtkSmartPointer.h"
 
@@ -135,8 +136,13 @@ vtkSmartPointer<vtkDataSet> vtkPTemporalPathLineFilter::AllGatherSelection(vtkDa
   }
 
   // Build a local vtkPolyData with the unique IDs as point data
-  // so AccumulateTrails can find them.
+  // so AccumulateTrails can find them. Allocate matching dummy
+  // points so GetNumberOfPoints() stays consistent with the
+  // point-data array length.
   vtkNew<vtkPolyData> gatheredSelection;
+  vtkNew<vtkPoints> dummyPoints;
+  dummyPoints->SetNumberOfPoints(uniqueIds->GetNumberOfTuples());
+  gatheredSelection->SetPoints(dummyPoints);
 
   if (this->IdChannelArray)
   {
