@@ -552,75 +552,6 @@ wasm64-emscripten:vtk:upload:
 
 ## Python x86_64 wheel builds
 
-wheel-linux-python39-x86_64:build:
-    extends:
-        - .wheel_linux39_x86_64
-        - .cmake_build_wheel_linux
-        - .linux_x86_64_builder_tags
-        - .cmake_wheel_artifacts
-        - .rules_variables_wheel_older_build
-    needs: []
-
-wheel-linux-python39-x86_64:test:
-    extends:
-        - .wheel_linux39_x86_64
-        - .cmake_test_wheel_linux
-        - .linux_x86_64_builder_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-linux-python39-x86_64:build
-
-wheel-linux-python39-x86_64:test-x11:
-    extends:
-        - .wheel_linux39_x86_64
-        - .cmake_test_wheel_linux_x11
-        - .linux_x86_64_tester_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-linux-python39-x86_64:build
-
-wheel-linux-python39-x86_64-osmesa:test:
-    extends:
-        - .wheel_linux39_x86_64_osmesa
-        - .cmake_test_wheel_linux
-        - .linux_x86_64_builder_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-linux-python39-x86_64:build
-
-wheel-linux-python39-x86_64-osmesa:test-x11:
-    extends:
-        - .wheel_linux39_x86_64_osmesa
-        - .cmake_test_wheel_linux_x11
-        - .linux_x86_64_builder_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-linux-python39-x86_64:build
-
-wheel-linux-python39-x86_64-egl:test:
-    extends:
-        - .wheel_linux39_x86_64_egl
-        - .cmake_test_wheel_linux
-        - .linux_x86_64_builder_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-linux-python39-x86_64:build
-
-wheel-linux-python39-x86_64-egl:test-x11:
-    extends:
-        - .wheel_linux39_x86_64_egl
-        - .cmake_test_wheel_linux_x11
-        - .linux_x86_64_tester_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-linux-python39-x86_64:build
-
 wheel-linux-python310-x86_64:build:
     extends:
         - .wheel_linux310_x86_64
@@ -1042,75 +973,6 @@ wheel-linux-python314t-x86_64-egl:test-x11:
         - wheel-linux-python314t-x86_64:build
 
 ## Python aarch64 wheel builds
-
-wheel-linux-python39-aarch64:build:
-    extends:
-        - .wheel_linux39_aarch64
-        - .cmake_build_wheel_linux
-        - .linux_aarch64_builder_tags
-        - .cmake_wheel_artifacts
-        - .rules_variables_wheel_older_build
-    needs: []
-
-wheel-linux-python39-aarch64:test:
-    extends:
-        - .wheel_linux39_aarch64
-        - .cmake_test_wheel_linux
-        - .linux_aarch64_builder_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-linux-python39-aarch64:build
-
-wheel-linux-python39-aarch64:test-x11:
-    extends:
-        - .wheel_linux39_aarch64
-        - .cmake_test_wheel_linux_x11_aarch64
-        - .linux_aarch64_tester_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-linux-python39-aarch64:build
-
-wheel-linux-python39-aarch64-osmesa:test:
-    extends:
-        - .wheel_linux39_aarch64_osmesa
-        - .cmake_test_wheel_linux
-        - .linux_aarch64_builder_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-linux-python39-aarch64:build
-
-wheel-linux-python39-aarch64-osmesa:test-x11:
-    extends:
-        - .wheel_linux39_aarch64_osmesa
-        - .cmake_test_wheel_linux_x11_aarch64
-        - .linux_aarch64_builder_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-linux-python39-aarch64:build
-
-wheel-linux-python39-aarch64-egl:test:
-    extends:
-        - .wheel_linux39_aarch64_egl
-        - .cmake_test_wheel_linux
-        - .linux_aarch64_builder_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-linux-python39-aarch64:build
-
-wheel-linux-python39-aarch64-egl:test-x11:
-    extends:
-        - .wheel_linux39_aarch64_egl
-        - .cmake_test_wheel_linux_x11_aarch64
-        - .linux_aarch64_tester_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-linux-python39-aarch64:build
 
 wheel-linux-python310-aarch64:build:
     extends:
@@ -1541,11 +1403,6 @@ wheel:pypi:upload:
     needs:
         # If you update this list, you probably need to update the list of:
         # wheel:vtk:upload, wheel-sdk:upload, wheel-vtk-sdk:upload and release-artifacts:upload
-        - wheel-linux-python39-x86_64:build
-        - job: wheel-linux-python39-x86_64:test
-          artifacts: false
-        - job: wheel-linux-python39-x86_64:test-x11
-          artifacts: false
         - wheel-linux-python310-x86_64:build
         - job: wheel-linux-python310-x86_64:test
           artifacts: false
@@ -1576,11 +1433,6 @@ wheel:pypi:upload:
           artifacts: false
         - job: wheel-linux-python314t-x86_64:test-x11
           artifacts: false
-        - wheel-linux-python39-aarch64:build
-        - job: wheel-linux-python39-aarch64:test
-          artifacts: false
-        - job: wheel-linux-python39-aarch64:test-x11
-          artifacts: false
         - wheel-linux-python310-aarch64:build
         - job: wheel-linux-python310-aarch64:test
           artifacts: false
@@ -1610,12 +1462,6 @@ wheel:pypi:upload:
         - job: wheel-linux-python314t-aarch64:test
           artifacts: false
         - job: wheel-linux-python314t-aarch64:test-x11
-          artifacts: false
-        - wheel-macos-python39-arm64:build
-        - job: wheel-macos-python39-arm64:test
-          artifacts: false
-        - wheel-macos-python39-x86_64:build
-        - job: wheel-macos-python39-x86_64:test
           artifacts: false
         - wheel-macos-python310-arm64:build
         - job: wheel-macos-python310-arm64:test
@@ -1653,9 +1499,6 @@ wheel:pypi:upload:
         - wheel-macos-python314t-x86_64:build
         - job: wheel-macos-python314t-x86_64:test
           artifacts: false
-        - wheel-windows-python39-x86_64:build
-        - job: wheel-windows-python39-x86_64:test
-          artifacts: false
         - wheel-windows-python310-x86_64:build
         - job: wheel-windows-python310-x86_64:test
           artifacts: false
@@ -1685,19 +1528,6 @@ wheel:vtk:upload:
     needs:
         # If you update this list, you probably need to update the list of:
         # wheel:pypi:upload, wheel-sdk:upload, wheel-vtk-sdk:upload and release-artifacts:upload
-        - wheel-linux-python39-x86_64:build
-        - job: wheel-linux-python39-x86_64:test
-          artifacts: false
-        - job: wheel-linux-python39-x86_64:test-x11
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-osmesa:test
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-osmesa:test-x11
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-egl:test
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-egl:test-x11
-          artifacts: false
         - wheel-linux-python310-x86_64:build
         - job: wheel-linux-python310-x86_64:test
           artifacts: false
@@ -1776,11 +1606,6 @@ wheel:vtk:upload:
           artifacts: false
         - job: wheel-linux-python314t-x86_64-egl:test-x11
           artifacts: false
-        - wheel-linux-python39-aarch64:build
-        - job: wheel-linux-python39-aarch64:test
-          artifacts: false
-        - job: wheel-linux-python39-aarch64:test-x11
-          artifacts: false
         - wheel-linux-python310-aarch64:build
         - job: wheel-linux-python310-aarch64:test
           artifacts: false
@@ -1810,12 +1635,6 @@ wheel:vtk:upload:
         - job: wheel-linux-python314t-aarch64:test
           artifacts: false
         - job: wheel-linux-python314t-aarch64:test-x11
-          artifacts: false
-        - wheel-macos-python39-arm64:build
-        - job: wheel-macos-python39-arm64:test
-          artifacts: false
-        - wheel-macos-python39-x86_64:build
-        - job: wheel-macos-python39-x86_64:test
           artifacts: false
         - wheel-macos-python310-arm64:build
         - job: wheel-macos-python310-arm64:test
@@ -1852,11 +1671,6 @@ wheel:vtk:upload:
 #          artifacts: false
         - wheel-macos-python314t-x86_64:build
         - job: wheel-macos-python314t-x86_64:test
-          artifacts: false
-        - wheel-windows-python39-x86_64:build
-        - job: wheel-windows-python39-x86_64:test
-          artifacts: false
-        - job: wheel-windows-python39-x86_64-osmesa:test
           artifacts: false
         - wheel-windows-python310-x86_64:build
         - job: wheel-windows-python310-x86_64:test
@@ -1901,19 +1715,6 @@ wheel-sdk:upload:
     needs:
         # If you update this list, you probably need to update the list of:
         # wheel:pypi:upload, wheel:vtk:upload, wheel-vtk-sdk:upload and release-artifacts:upload
-        - wheel-linux-python39-x86_64:build
-        - job: wheel-linux-python39-x86_64:test
-          artifacts: false
-        - job: wheel-linux-python39-x86_64:test-x11
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-osmesa:test
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-osmesa:test-x11
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-egl:test
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-egl:test-x11
-          artifacts: false
         - wheel-linux-python310-x86_64:build
         - job: wheel-linux-python310-x86_64:test
           artifacts: false
@@ -1976,11 +1777,6 @@ wheel-sdk:upload:
           artifacts: false
         - job: wheel-linux-python314t-x86_64:test-x11
           artifacts: false
-        - wheel-linux-python39-aarch64:build
-        - job: wheel-linux-python39-aarch64:test
-          artifacts: false
-        - job: wheel-linux-python39-aarch64:test-x11
-          artifacts: false
         - wheel-linux-python310-aarch64:build
         - job: wheel-linux-python310-aarch64:test
           artifacts: false
@@ -2010,12 +1806,6 @@ wheel-sdk:upload:
         - job: wheel-linux-python314t-aarch64:test
           artifacts: false
         - job: wheel-linux-python314t-aarch64:test-x11
-          artifacts: false
-#        - wheel-macos-python39-arm64:build
-#        - job: wheel-macos-python39-arm64:test
-#          artifacts: false
-        - wheel-macos-python39-x86_64:build
-        - job: wheel-macos-python39-x86_64:test
           artifacts: false
 #        - wheel-macos-python310-arm64:build
 #        - job: wheel-macos-python310-arm64:test
@@ -2052,11 +1842,6 @@ wheel-sdk:upload:
 #          artifacts: false
         - wheel-macos-python314t-x86_64:build
         - job: wheel-macos-python314t-x86_64:test
-          artifacts: false
-        - wheel-windows-python39-x86_64:build
-        - job: wheel-windows-python39-x86_64:test
-          artifacts: false
-        - job: wheel-windows-python39-x86_64-osmesa:test
           artifacts: false
         - wheel-windows-python310-x86_64:build
         - job: wheel-windows-python310-x86_64:test
@@ -2104,19 +1889,6 @@ wheel-vtk-sdk:upload:
     needs:
         # If you update this list, you probably need to update the list of:
         # wheel:pypi:upload, wheel:vtk:upload, wheel-sdk:upload and release-artifacts:upload
-        - wheel-linux-python39-x86_64:build
-        - job: wheel-linux-python39-x86_64:test
-          artifacts: false
-        - job: wheel-linux-python39-x86_64:test-x11
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-osmesa:test
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-osmesa:test-x11
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-egl:test
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-egl:test-x11
-          artifacts: false
         - wheel-linux-python310-x86_64:build
         - job: wheel-linux-python310-x86_64:test
           artifacts: false
@@ -2195,11 +1967,6 @@ wheel-vtk-sdk:upload:
           artifacts: false
         - job: wheel-linux-python314t-x86_64-egl:test-x11
           artifacts: false
-        - wheel-linux-python39-aarch64:build
-        - job: wheel-linux-python39-aarch64:test
-          artifacts: false
-        - job: wheel-linux-python39-aarch64:test-x11
-          artifacts: false
         - wheel-linux-python310-aarch64:build
         - job: wheel-linux-python310-aarch64:test
           artifacts: false
@@ -2229,12 +1996,6 @@ wheel-vtk-sdk:upload:
         - job: wheel-linux-python314t-aarch64:test
           artifacts: false
         - job: wheel-linux-python314t-aarch64:test-x11
-          artifacts: false
-        - wheel-macos-python39-arm64:build
-        - job: wheel-macos-python39-arm64:test
-          artifacts: false
-        - wheel-macos-python39-x86_64:build
-        - job: wheel-macos-python39-x86_64:test
           artifacts: false
         - wheel-macos-python310-arm64:build
         - job: wheel-macos-python310-arm64:test
@@ -2271,11 +2032,6 @@ wheel-vtk-sdk:upload:
 #          artifacts: false
         - wheel-macos-python314t-x86_64:build
         - job: wheel-macos-python314t-x86_64:test
-          artifacts: false
-        - wheel-windows-python39-x86_64:build
-        - job: wheel-windows-python39-x86_64:test
-          artifacts: false
-        - job: wheel-windows-python39-x86_64-osmesa:test
           artifacts: false
         - wheel-windows-python310-x86_64:build
         - job: wheel-windows-python310-x86_64:test
@@ -2447,19 +2203,6 @@ release-artifacts:upload:
         # wheel:pypi:upload, wheel:vtk:upload, wheel-sdk:upload and wheel-vtk-sdk:upload
         - source:build
         - documentation:release-prep
-        - wheel-linux-python39-x86_64:build
-        - job: wheel-linux-python39-x86_64:test
-          artifacts: false
-        - job: wheel-linux-python39-x86_64:test-x11
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-osmesa:test
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-osmesa:test-x11
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-egl:test
-          artifacts: false
-        - job: wheel-linux-python39-x86_64-egl:test-x11
-          artifacts: false
         - wheel-linux-python310-x86_64:build
         - job: wheel-linux-python310-x86_64:test
           artifacts: false
@@ -2537,19 +2280,6 @@ release-artifacts:upload:
         - job: wheel-linux-python314t-x86_64-egl:test
           artifacts: false
         - job: wheel-linux-python314t-x86_64-egl:test-x11
-          artifacts: false
-        - wheel-linux-python39-aarch64:build
-        - job: wheel-linux-python39-aarch64:test
-          artifacts: false
-        - job: wheel-linux-python39-aarch64:test-x11
-          artifacts: false
-        - job: wheel-linux-python39-aarch64-osmesa:test
-          artifacts: false
-        - job: wheel-linux-python39-aarch64-osmesa:test-x11
-          artifacts: false
-        - job: wheel-linux-python39-aarch64-egl:test
-          artifacts: false
-        - job: wheel-linux-python39-aarch64-egl:test-x11
           artifacts: false
         - wheel-linux-python310-aarch64:build
         - job: wheel-linux-python310-aarch64:test
@@ -2629,12 +2359,6 @@ release-artifacts:upload:
           artifacts: false
         - job: wheel-linux-python314t-aarch64-egl:test-x11
           artifacts: false
-        - wheel-macos-python39-arm64:build
-        - job: wheel-macos-python39-arm64:test
-          artifacts: false
-        - wheel-macos-python39-x86_64:build
-        - job: wheel-macos-python39-x86_64:test
-          artifacts: false
         - wheel-macos-python310-arm64:build
         - job: wheel-macos-python310-arm64:test
           artifacts: false
@@ -2670,11 +2394,6 @@ release-artifacts:upload:
 #          artifacts: false
         - wheel-macos-python314t-x86_64:build
         - job: wheel-macos-python314t-x86_64:test
-          artifacts: false
-        - wheel-windows-python39-x86_64:build
-        - job: wheel-windows-python39-x86_64:test
-          artifacts: false
-        - job: wheel-windows-python39-x86_64-osmesa:test
           artifacts: false
         - wheel-windows-python310-x86_64:build
         - job: wheel-windows-python310-x86_64:test
@@ -2805,45 +2524,6 @@ macos-x86_64-kits-python-qt-stdthread:test:
 #         - macos-x86_64-kits-python-qt:test
 
 ## Python wheel builds
-
-wheel-macos-python39-arm64:build:
-    extends:
-        - .wheel_macos39_arm64
-        - .cmake_build_wheel_macos
-        - .macos_arm64_wheel_builder_tags
-        - .cmake_wheel_artifacts
-        - .rules_variables_wheel_older_build
-    needs: []
-
-wheel-macos-python39-arm64:test:
-    extends:
-        - .wheel_macos39_arm64
-        - .cmake_test_wheel_macos
-        - .macos_arm64_wheel_builder_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-macos-python39-arm64:build
-
-wheel-macos-python39-x86_64:build:
-    extends:
-        - .wheel_macos39_x86_64
-        - .cmake_build_wheel_macos
-        - .macos_x86_64_wheel_builder_tags
-        - .cmake_wheel_artifacts
-        - .rules_variables_wheel_older_build
-    timeout: 120 minutes
-    needs: []
-
-wheel-macos-python39-x86_64:test:
-    extends:
-        - .wheel_macos39_x86_64
-        - .cmake_test_wheel_macos
-        - .macos_x86_64_wheel_builder_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-macos-python39-x86_64:build
 
 wheel-macos-python310-arm64:build:
     extends:
@@ -3218,38 +2898,6 @@ windows-vs2022-mpi-python-qt-static:test:
         - windows-vs2022-mpi-python-qt-static:build
 
 ## Python wheel builds
-
-wheel-windows-python39-x86_64:build:
-    extends:
-        - .wheel_windows39_x86_64
-        - .cmake_build_wheel_windows
-        - .windows_wheel_builder_tags
-        - .cmake_wheel_artifacts
-        - .rules_variables_wheel_older_build
-    needs: []
-
-wheel-windows-python39-x86_64:test:
-    extends:
-        - .wheel_windows39_x86_64
-        - .cmake_test_wheel_windows
-        - .windows_wheel_builder_tags
-        - .cdash_annotations_artifacts
-        - .rules_variables_wheel_older_test
-    needs:
-        - wheel-windows-python39-x86_64:build
-
-wheel-windows-python39-x86_64-osmesa:test:
-    extends:
-        - .wheel_windows39_x86_64_osmesa
-        - .cmake_test_wheel_windows
-        - .windows_wheel_builder_tags
-        - .cdash_annotations_artifacts
-        - .rules
-    variables:
-        VTK_CI_MERGED_ONLY: "true"
-        VTK_CI_NIGHTLY_ONLY: "true"
-    needs:
-        - wheel-windows-python39-x86_64:build
 
 wheel-windows-python310-x86_64:build:
     extends:
