@@ -111,7 +111,7 @@ vtk_module_include(VTK::fides
   PUBLIC
     $<BUILD_INTERFACE:${FIDES_SOURCE_DIR}>
     $<BUILD_INTERFACE:${FIDES_BINARY_DIR}/fides>
-    $<INSTALL_INTERFACE:${_vtk_build_HEADERS_DESTINATION}/vtkfides/fides>
+    $<INSTALL_INTERFACE:${_vtk_build_HEADERS_DESTINATION}/vtkfides>
   )
 
 include(GenerateExportHeader)
