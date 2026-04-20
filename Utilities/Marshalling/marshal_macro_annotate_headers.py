@@ -88,6 +88,7 @@ def get_status():
                 else:
                     parts = line.split('/')
                     module_dir = VTK_DIR.joinpath(*parts[0:-1])
+                    module_dirs.add(module_dir)
                     header = module_dir.joinpath(parts[-1])
                     headers[marshal_file].add(header)
                     existing_macro_line_match = find_matching_line(
