@@ -187,6 +187,7 @@ Common/Core/vtkVersion.h
 Common/Core/vtkVoidArray.h
 Common/Core/vtkWeakPointer.h
 Common/Core/vtkWeakPointerBase.h
+Common/Core/vtkWeakPtr.h
 Common/Core/vtkWeakReference.h
 Common/Core/vtkWin32Header.h
 Common/Core/vtkWin32OutputWindow.h
@@ -368,6 +369,8 @@ Common/DataModel/vtkLocator.h
 Common/DataModel/vtkLocatorInterface.h
 Common/DataModel/vtkMappedUnstructuredGrid.h
 Common/DataModel/vtkMappedUnstructuredGridCellIterator.h
+Common/DataModel/vtkMarchingCellsClipCases.h
+Common/DataModel/vtkMarchingCellsContourCases.h
 Common/DataModel/vtkMarchingCubesPolygonCases.h
 Common/DataModel/vtkMarchingCubesTriangleCases.h
 Common/DataModel/vtkMarchingSquaresLineCases.h
@@ -606,6 +609,20 @@ Imaging/Core/vtkImageThreshold.h
 Imaging/Core/vtkImageTranslateExtent.h
 Imaging/Core/vtkImageWrapPad.h
 Imaging/Core/vtkInterpolationMath.h
+Interaction/Style/vtkCameraManipulator.h
+Interaction/Style/vtkInteractorStyleManipulator.h
+Interaction/Style/vtkJoystickFly.h
+Interaction/Style/vtkJoystickFlyIn.h
+Interaction/Style/vtkJoystickFlyOut.h
+Interaction/Style/vtkTableTopRotate.h
+Interaction/Style/vtkTrackballEnvironmentRotate.h
+Interaction/Style/vtkTrackballMoveActor.h
+Interaction/Style/vtkTrackballMultiRotate.h
+Interaction/Style/vtkTrackballPan.h
+Interaction/Style/vtkTrackballRoll.h
+Interaction/Style/vtkTrackballRotate.h
+Interaction/Style/vtkTrackballZoom.h
+Interaction/Style/vtkTrackballZoomToMouse.h
 Interaction/Widgets/vtk3DWidget.h
 Interaction/Widgets/vtkAbstractPolygonalHandleRepresentation3D.h
 Interaction/Widgets/vtkAbstractSplineRepresentation.h
