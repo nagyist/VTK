@@ -1,13 +1,17 @@
 """VTKStructuredPointArray — lazy numpy-compatible wrapper for structured points.
 
-This module provides VTKStructuredPointArray and VTKStructuredAxisArray classes
-that lazily represent the point coordinates of vtkImageData and vtkRectilinearGrid
-datasets without materializing the full (N, 3) array.
+This module provides VTKStructuredPointArray and VTKStructuredAxisArray.
+VTKStructuredPointArray is registered as an override on the
+``vtkStructuredPointArray`` template so that the coordinate array returned
+by ``vtkImageData.points.data`` and ``vtkRectilinearGrid.points.data``
+exposes a numpy-compatible surface without materializing the full
+(N, 3) array.
 
-For a grid with dimensions (nx, ny, nz), only O(nx + ny + nz) storage is needed
-instead of O(nx * ny * nz * 3).  Ufuncs and scalar arithmetic operate per-axis
-and stay lazy.  Reductions (sum, min, max, mean) use optimized O(nx+ny+nz)
-formulas.
+For a grid with dimensions (nx, ny, nz), only O(nx + ny + nz) storage is
+needed instead of O(nx * ny * nz * 3).  Ufuncs and scalar arithmetic
+operate per-axis and stay lazy, producing another VTKStructuredPointArray
+whose backend is built via ``ConstructBackend``.  Reductions (sum, min,
+max, mean) use optimized O(nx+ny+nz) formulas.
 
 VTK uses Fortran ordering where i increases fastest:
     flat_idx = i + j * nx + k * nx * ny
@@ -20,21 +24,12 @@ from ..vtkCommonCore import vtkWeakReference
 from ._vtk_array_mixin import VTKDataArrayMixin
 
 
-# Registry for __array_function__ overrides for the dataset-level wrapper
+# Registry for __array_function__ overrides
 _STRUCTURED_POINT_OVERRIDE = {}
 
-# Registry for __array_function__ overrides for the VTK mixin
-_STRUCTURED_POINT_MIXIN_OVERRIDE = {}
-
-def _override_mixin_numpy(numpy_function):
-    """Register an __array_function__ override for VTKStructuredPointArrayMixin."""
-    def decorator(func):
-        _STRUCTURED_POINT_MIXIN_OVERRIDE[numpy_function] = func
-        return func
-    return decorator
 
 def _override_structured_point_numpy(numpy_function):
-    """Register an __array_function__ implementation for VTKStructuredPointArray."""
+    """Register an __array_function__ override for VTKStructuredPointArray."""
     def decorator(func):
         _STRUCTURED_POINT_OVERRIDE[numpy_function] = func
         return func
@@ -193,367 +188,21 @@ class VTKStructuredAxisArray:
     def __rpow__(self, other):      return numpy.power(other, self)
 
 
-class VTKStructuredPointArray:
-    """A lazy array wrapper for structured point arrays that stores three
-    1D axis arrays and computes points without materializing the full (N, 3)
-    grid.
-
-    When the direction matrix is identity (common case for vtkImageData and
-    all vtkRectilinearGrid), ufuncs and arithmetic operate per-axis and stay
-    lazy.  When a non-identity direction matrix is used, operations fall back
-    to full materialization.
-
-    VTK uses Fortran ordering where i increases fastest:
-        flat_idx = i + j * nx + k * nx * ny
-    """
-
-    def __init__(self, dataset=None, axis_arrays=None, dims=None,
-                 uses_dir_matrix=False):
-        self._dataset = None
-        if dataset is not None:
-            self._dataset = vtkWeakReference()
-            self._dataset.Set(dataset)
-        self._cached_axis_arrays = axis_arrays
-        self._cached_dims = dims
-        self._cached_uses_dir_matrix = (
-            uses_dir_matrix if axis_arrays is not None else None)
-        self.Association = None
-
-    @classmethod
-    def from_image_data(cls, image_data):
-        """Create from vtkImageData.
-
-        Computes axis arrays from origin, spacing, and dimensions.
-        Detects non-identity direction matrices.
-        """
-        obj = cls(dataset=image_data)
-        return obj
-
-    @classmethod
-    def from_rectilinear_grid(cls, rectilinear_grid):
-        """Create from vtkRectilinearGrid.
-
-        Uses the X/Y/Z coordinate arrays directly.
-        RectilinearGrid never has a direction matrix.
-        """
-        obj = cls(dataset=rectilinear_grid)
-        return obj
-
-    @classmethod
-    def _from_axes(cls, axis_arrays, dims=None, uses_dir_matrix=False):
-        """Create from axis arrays for intermediate results (no VTK backing)."""
-        return cls(axis_arrays=list(axis_arrays), dims=dims,
-                   uses_dir_matrix=uses_dir_matrix)
-
-    def _get_dataset(self):
-        """Get the dataset from the weak reference."""
-        if self._dataset is not None:
-            return self._dataset.Get()
-        return None
-
-    @property
-    def _axis_arrays(self):
-        """Get axis arrays, computing from dataset if needed."""
-        if self._cached_axis_arrays is not None:
-            return self._cached_axis_arrays
-
-        dataset = self._get_dataset()
-        if dataset is None:
-            return [numpy.array([]), numpy.array([]), numpy.array([])]
-
-        from ..vtkCommonDataModel import vtkImageData, vtkRectilinearGrid
-
-        if isinstance(dataset, vtkImageData):
-            dims = [0, 0, 0]
-            dataset.GetDimensions(dims)
-            origin = dataset.GetOrigin()
-            spacing = dataset.GetSpacing()
-            return [
-                numpy.array(origin[i] + spacing[i] * numpy.arange(dims[i]),
-                            dtype=numpy.float64)
-                for i in range(3)
-            ]
-        elif isinstance(dataset, vtkRectilinearGrid):
-            return [
-                numpy_support.vtk_to_numpy(dataset.GetXCoordinates()),
-                numpy_support.vtk_to_numpy(dataset.GetYCoordinates()),
-                numpy_support.vtk_to_numpy(dataset.GetZCoordinates()),
-            ]
-        return [numpy.array([]), numpy.array([]), numpy.array([])]
-
-    @property
-    def _dims(self):
-        """Get dimensions from axis arrays or dataset."""
-        if self._cached_dims is not None:
-            return self._cached_dims
-        return tuple(len(a) for a in self._axis_arrays)
-
-    @property
-    def _uses_dir_matrix(self):
-        """Check if a non-identity direction matrix is used."""
-        if self._cached_uses_dir_matrix is not None:
-            return self._cached_uses_dir_matrix
-
-        dataset = self._get_dataset()
-        if dataset is None:
-            return False
-
-        from ..vtkCommonDataModel import vtkImageData
-        if isinstance(dataset, vtkImageData):
-            dm = dataset.GetDirectionMatrix()
-            for i in range(3):
-                for j in range(3):
-                    expected = 1.0 if i == j else 0.0
-                    if abs(dm.GetElement(i, j) - expected) > 1e-10:
-                        return True
-        return False
-
-    @property
-    def VTKObject(self):
-        """Get the underlying VTK point data array from the dataset."""
-        dataset = self._get_dataset()
-        if dataset is not None:
-            pts = dataset.GetPoints()
-            if pts is not None:
-                return pts.GetData()
-        return None
-
-    @property
-    def shape(self):
-        nx, ny, nz = self._dims
-        return (nx * ny * nz, 3)
-
-    @property
-    def dtype(self):
-        return self._axis_arrays[0].dtype
-
-    @property
-    def ndim(self):
-        return 2
-
-    @property
-    def size(self):
-        return self.shape[0] * 3
-
-    def __len__(self):
-        return self.shape[0]
-
-    def __repr__(self):
-        return (f"VTKStructuredPointArray(dims={self._dims}, "
-                f"dtype={self.dtype}, uses_dir_matrix={self._uses_dir_matrix})")
-
-    def _flat_to_ijk(self, flat_idx):
-        """Convert a flat index to (i, j, k) structured indices.
-
-        VTK uses Fortran ordering (i fastest):
-            flat_idx = i + j * nx + k * nx * ny
-        """
-        nx, ny, nz = self._dims
-        i = flat_idx % nx
-        j = (flat_idx // nx) % ny
-        k = flat_idx // (nx * ny)
-        return i, j, k
-
-    def __array__(self, dtype=None, **kwargs):
-        """Materialize the full (N, 3) array."""
-        if self._uses_dir_matrix and self.VTKObject is not None:
-            result = numpy_support.vtk_to_numpy(self.VTKObject)
-            if dtype is not None:
-                result = result.astype(dtype)
-            return result
-
-        X, Y, Z = self._axis_arrays
-        gx, gy, gz = numpy.meshgrid(X, Y, Z, indexing='ij')
-        result = numpy.column_stack([
-            gx.ravel(order='F'),
-            gy.ravel(order='F'),
-            gz.ravel(order='F')
-        ])
-
-        if dtype is not None:
-            result = result.astype(dtype)
-        return result
-
-    def __getitem__(self, index):
-        """Index into the structured point array."""
-        if isinstance(index, (int, numpy.integer)):
-            n = self.shape[0]
-            if index < 0:
-                index += n
-            if index < 0 or index >= n:
-                raise IndexError(
-                    f"index {index} is out of bounds for axis 0 with size {n}")
-            if not self._uses_dir_matrix:
-                i, j, k = self._flat_to_ijk(index)
-                return numpy.array([
-                    self._axis_arrays[0][i],
-                    self._axis_arrays[1][j],
-                    self._axis_arrays[2][k]
-                ], dtype=self.dtype)
-            else:
-                return numpy.asarray(self)[index]
-
-        # Column indexing: [:, 0], [:, 1], [:, 2]
-        if isinstance(index, tuple) and len(index) == 2:
-            row_idx, col_idx = index
-            if (isinstance(row_idx, slice) and row_idx == slice(None)
-                    and isinstance(col_idx, (int, numpy.integer))
-                    and col_idx in (0, 1, 2)
-                    and not self._uses_dir_matrix):
-                dataset = self._get_dataset()
-                return VTKStructuredAxisArray(
-                    self._axis_arrays[col_idx], col_idx,
-                    self._dims, dataset)
-
-        # Fall back to materialization
-        return numpy.asarray(self)[index]
-
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        """Handle numpy ufuncs.  For identity-matrix arrays, apply per-axis
-        and stay lazy."""
-        if method != '__call__':
-            return NotImplemented
-
-        # Unary ufunc
-        if (len(inputs) == 1 and not self._uses_dir_matrix
-                and isinstance(inputs[0], VTKStructuredPointArray)):
-            new_axes = [ufunc(a) for a in self._axis_arrays]
-            return VTKStructuredPointArray._from_axes(
-                new_axes, dims=self._dims)
-
-        # Binary ufunc with scalar
-        if len(inputs) == 2 and not self._uses_dir_matrix:
-            self_input = None
-            other_input = None
-            for inp in inputs:
-                if isinstance(inp, VTKStructuredPointArray):
-                    self_input = inp
-                else:
-                    other_input = inp
-            if self_input is not None and other_input is not None:
-                if numpy.isscalar(other_input) or (
-                        isinstance(other_input, numpy.ndarray)
-                        and other_input.ndim == 0):
-                    if inputs[0] is self_input:
-                        new_axes = [ufunc(a, other_input)
-                                    for a in self_input._axis_arrays]
-                    else:
-                        new_axes = [ufunc(other_input, a)
-                                    for a in self_input._axis_arrays]
-                    return VTKStructuredPointArray._from_axes(
-                        new_axes, dims=self_input._dims)
-
-        # Fall back to materialization
-        materialized = [numpy.asarray(x)
-                        if isinstance(x, VTKStructuredPointArray) else x
-                        for x in inputs]
-        return ufunc(*materialized, **kwargs)
-
-    def __array_function__(self, func, types, args, kwargs):
-        """Handle numpy functions with optimized paths."""
-        if func in _STRUCTURED_POINT_OVERRIDE:
-            return _STRUCTURED_POINT_OVERRIDE[func](*args, **kwargs)
-        new_args = []
-        for a in args:
-            if isinstance(a, VTKStructuredPointArray):
-                new_args.append(numpy.asarray(a))
-            else:
-                new_args.append(a)
-        return func(*new_args, **kwargs)
-
-    # Arithmetic operators
-    def __add__(self, other):       return numpy.add(self, other)
-    def __radd__(self, other):      return numpy.add(other, self)
-    def __sub__(self, other):       return numpy.subtract(self, other)
-    def __rsub__(self, other):      return numpy.subtract(other, self)
-    def __mul__(self, other):       return numpy.multiply(self, other)
-    def __rmul__(self, other):      return numpy.multiply(other, self)
-    def __truediv__(self, other):   return numpy.true_divide(self, other)
-    def __rtruediv__(self, other):  return numpy.true_divide(other, self)
-    def __neg__(self):              return numpy.negative(self)
-
-
-# ---- Optimized reductions ---------------------------------------------------
-
-@_override_structured_point_numpy(numpy.sum)
-def _sp_sum(a, axis=None, **kwargs):
-    if not isinstance(a, VTKStructuredPointArray) or a._uses_dir_matrix:
-        return numpy.sum(numpy.asarray(a), axis=axis, **kwargs)
-    nx, ny, nz = a._dims
-    X, Y, Z = a._axis_arrays
-    if axis is None:
-        return (ny * nz * numpy.sum(X)
-                + nx * nz * numpy.sum(Y)
-                + nx * ny * numpy.sum(Z))
-    elif axis == 0:
-        return numpy.array([
-            ny * nz * numpy.sum(X),
-            nx * nz * numpy.sum(Y),
-            nx * ny * numpy.sum(Z)
-        ], dtype=numpy.float64)
-    else:
-        return numpy.sum(numpy.asarray(a), axis=axis, **kwargs)
-
-
-@_override_structured_point_numpy(numpy.min)
-def _sp_min(a, axis=None, **kwargs):
-    if not isinstance(a, VTKStructuredPointArray) or a._uses_dir_matrix:
-        return numpy.min(numpy.asarray(a), axis=axis, **kwargs)
-    X, Y, Z = a._axis_arrays
-    if axis is None:
-        return min(numpy.min(X), numpy.min(Y), numpy.min(Z))
-    elif axis == 0:
-        return numpy.array([numpy.min(X), numpy.min(Y), numpy.min(Z)])
-    else:
-        return numpy.min(numpy.asarray(a), axis=axis, **kwargs)
-
-
-@_override_structured_point_numpy(numpy.max)
-def _sp_max(a, axis=None, **kwargs):
-    if not isinstance(a, VTKStructuredPointArray) or a._uses_dir_matrix:
-        return numpy.max(numpy.asarray(a), axis=axis, **kwargs)
-    X, Y, Z = a._axis_arrays
-    if axis is None:
-        return max(numpy.max(X), numpy.max(Y), numpy.max(Z))
-    elif axis == 0:
-        return numpy.array([numpy.max(X), numpy.max(Y), numpy.max(Z)])
-    else:
-        return numpy.max(numpy.asarray(a), axis=axis, **kwargs)
-
-
-@_override_structured_point_numpy(numpy.mean)
-def _sp_mean(a, axis=None, **kwargs):
-    if not isinstance(a, VTKStructuredPointArray) or a._uses_dir_matrix:
-        return numpy.mean(numpy.asarray(a), axis=axis, **kwargs)
-    nx, ny, nz = a._dims
-    X, Y, Z = a._axis_arrays
-    if axis is None:
-        total = (ny * nz * numpy.sum(X)
-                 + nx * nz * numpy.sum(Y)
-                 + nx * ny * numpy.sum(Z))
-        return total / (nx * ny * nz * 3)
-    elif axis == 0:
-        return numpy.array([numpy.mean(X), numpy.mean(Y), numpy.mean(Z)])
-    else:
-        return numpy.mean(numpy.asarray(a), axis=axis, **kwargs)
-
-
-# ---- VTK class mixin for vtkStructuredPointArray ---------------------------
-
-class VTKStructuredPointArrayMixin(VTKDataArrayMixin):
+class VTKStructuredPointArray(VTKDataArrayMixin):
     """Numpy-compatible mixin for vtkStructuredPointArray template instances.
 
-    This mixin is automatically applied to all ``vtkStructuredPointArray``
-    instantiations (e.g. ``vtkStructuredPointTypeFloat64Array``).  It
-    provides ``__array__``, ``__buffer__``, indexing, and basic numpy
-    protocol so that structured point arrays returned by VTK are directly
-    usable with numpy.
+    Registered as an override for every ``vtkStructuredPointArray[dtype]``
+    instantiation.  Every structured-point array returned by VTK (such as
+    ``vtkImageData.points.data`` or ``vtkRectilinearGrid.points.data``) is
+    an instance of this class.  Ufunc and scalar results also come back
+    as instances of this class, built in-place via ``ConstructBackend``.
 
-    The mixin retrieves axis coordinate arrays directly from the C++
-    backend via ``GetXCoordinates()``, ``GetYCoordinates()``, and
-    ``GetZCoordinates()``, enabling lazy per-axis operations and
-    O(nx+ny+nz) reductions.  When no backend is available, it
-    materializes via ``DeepCopy`` to an AOS array.
+    Axis coordinates are read through the C++ ``GetXCoordinates()`` /
+    ``GetYCoordinates()`` / ``GetZCoordinates()`` accessors so the wrapper
+    stays in lockstep with the backing array.  With an identity direction
+    matrix (the common case), indexing and ufuncs operate per-axis and
+    stay lazy; reductions use O(nx+ny+nz) formulas.  With a non-identity
+    direction matrix, operations fall back to a full materialization.
     """
 
     # ---- construction -------------------------------------------------------
@@ -563,6 +212,32 @@ class VTKStructuredPointArrayMixin(VTKDataArrayMixin):
         if args and isinstance(args[0], str):
             return
         super().__init__(**kwargs)
+
+    @classmethod
+    def from_axes(cls, axis_arrays, dims=None):
+        """Build a structured-point array from three 1D axis arrays.
+
+        Picks a ``vtkStructuredPointArray[dtype]`` instantiation matching
+        the input axes' dtype, wraps the axes as VTK data arrays, and
+        calls ``ConstructBackend`` to set up the lazy backend.  The
+        returned array is an instance of ``VTKStructuredPointArray``
+        (via the registered override) and has identity direction matrix.
+        """
+        from ..vtkCommonCore import vtkStructuredPointArray
+        from ..vtkCommonDataModel import vtkStructuredData
+        x, y, z = [numpy.ascontiguousarray(a) for a in axis_arrays]
+        if dims is None:
+            dims = (len(x), len(y), len(z))
+        dtype_name = numpy.dtype(x.dtype).name
+        arr = vtkStructuredPointArray[dtype_name]()
+        xc = numpy_support.numpy_to_vtk(x)
+        yc = numpy_support.numpy_to_vtk(y)
+        zc = numpy_support.numpy_to_vtk(z)
+        extent = [0, dims[0] - 1, 0, dims[1] - 1, 0, dims[2] - 1]
+        data_desc = vtkStructuredData.GetDataDescriptionFromExtent(extent)
+        arr.ConstructBackend(xc, yc, zc, extent, data_desc)
+        arr.SetNumberOfTuples(vtkStructuredData.GetNumberOfPoints(extent))
+        return arr
 
     # ---- axis helpers -------------------------------------------------------
     def _get_axis_arrays(self):
@@ -688,19 +363,18 @@ class VTKStructuredPointArrayMixin(VTKDataArrayMixin):
         if axes is not None and not self._uses_dir_matrix():
             dims = tuple(len(a) for a in axes)
 
-            # Unary ufunc — apply per-axis, return dataset-level wrapper
+            # Unary ufunc — apply per-axis, stay lazy
             if (len(inputs) == 1
-                    and isinstance(inputs[0], VTKStructuredPointArrayMixin)):
+                    and isinstance(inputs[0], VTKStructuredPointArray)):
                 new_axes = [ufunc(a) for a in axes]
-                return VTKStructuredPointArray._from_axes(
-                    new_axes, dims=dims)
+                return VTKStructuredPointArray.from_axes(new_axes, dims=dims)
 
             # Binary ufunc with scalar
             if len(inputs) == 2:
                 self_input = None
                 other_input = None
                 for inp in inputs:
-                    if isinstance(inp, VTKStructuredPointArrayMixin):
+                    if isinstance(inp, VTKStructuredPointArray):
                         self_input = inp
                     else:
                         other_input = inp
@@ -716,22 +390,22 @@ class VTKStructuredPointArrayMixin(VTKDataArrayMixin):
                             else:
                                 new_axes = [ufunc(other_input, a)
                                             for a in self_axes]
-                            return VTKStructuredPointArray._from_axes(
+                            return VTKStructuredPointArray.from_axes(
                                 new_axes, dims=dims)
 
         # Fall back to materialization
         materialized = [numpy.asarray(x)
-                        if isinstance(x, VTKStructuredPointArrayMixin) else x
+                        if isinstance(x, VTKStructuredPointArray) else x
                         for x in inputs]
         result = ufunc(*materialized, **kwargs)
         return self._wrap_result(result)
 
     def __array_function__(self, func, types, args, kwargs):
-        if func in _STRUCTURED_POINT_MIXIN_OVERRIDE:
-            return _STRUCTURED_POINT_MIXIN_OVERRIDE[func](*args, **kwargs)
+        if func in _STRUCTURED_POINT_OVERRIDE:
+            return _STRUCTURED_POINT_OVERRIDE[func](*args, **kwargs)
         new_args = []
         for a in args:
-            if isinstance(a, VTKStructuredPointArrayMixin):
+            if isinstance(a, VTKStructuredPointArray):
                 new_args.append(numpy.asarray(a))
             else:
                 new_args.append(a)
@@ -771,11 +445,11 @@ class VTKStructuredPointArrayMixin(VTKDataArrayMixin):
         return repr(self)
 
 
-# ---- Mixin-level numpy function overrides -----------------------------------
+# ---- Optimized reductions ---------------------------------------------------
 
-@_override_mixin_numpy(numpy.sum)
-def _mixin_sum(a, axis=None, **kwargs):
-    if not isinstance(a, VTKStructuredPointArrayMixin):
+@_override_structured_point_numpy(numpy.sum)
+def _sp_sum(a, axis=None, **kwargs):
+    if not isinstance(a, VTKStructuredPointArray):
         return numpy.sum(numpy.asarray(a), axis=axis, **kwargs)
     axes = a._get_axis_arrays()
     if axes is not None and not a._uses_dir_matrix():
@@ -795,9 +469,9 @@ def _mixin_sum(a, axis=None, **kwargs):
     return numpy.sum(numpy.asarray(a), axis=axis, **kwargs)
 
 
-@_override_mixin_numpy(numpy.min)
-def _mixin_min(a, axis=None, **kwargs):
-    if not isinstance(a, VTKStructuredPointArrayMixin):
+@_override_structured_point_numpy(numpy.min)
+def _sp_min(a, axis=None, **kwargs):
+    if not isinstance(a, VTKStructuredPointArray):
         return numpy.min(numpy.asarray(a), axis=axis, **kwargs)
     axes = a._get_axis_arrays()
     if axes is not None and not a._uses_dir_matrix():
@@ -809,9 +483,9 @@ def _mixin_min(a, axis=None, **kwargs):
     return numpy.min(numpy.asarray(a), axis=axis, **kwargs)
 
 
-@_override_mixin_numpy(numpy.max)
-def _mixin_max(a, axis=None, **kwargs):
-    if not isinstance(a, VTKStructuredPointArrayMixin):
+@_override_structured_point_numpy(numpy.max)
+def _sp_max(a, axis=None, **kwargs):
+    if not isinstance(a, VTKStructuredPointArray):
         return numpy.max(numpy.asarray(a), axis=axis, **kwargs)
     axes = a._get_axis_arrays()
     if axes is not None and not a._uses_dir_matrix():
@@ -823,9 +497,9 @@ def _mixin_max(a, axis=None, **kwargs):
     return numpy.max(numpy.asarray(a), axis=axis, **kwargs)
 
 
-@_override_mixin_numpy(numpy.mean)
-def _mixin_mean(a, axis=None, **kwargs):
-    if not isinstance(a, VTKStructuredPointArrayMixin):
+@_override_structured_point_numpy(numpy.mean)
+def _sp_mean(a, axis=None, **kwargs):
+    if not isinstance(a, VTKStructuredPointArray):
         return numpy.mean(numpy.asarray(a), axis=axis, **kwargs)
     axes = a._get_axis_arrays()
     if axes is not None and not a._uses_dir_matrix():
@@ -884,22 +558,25 @@ def _add_template_type_aliases(template_cls, prefix):
 
 
 def _register_structured_point_overrides():
-    """Register VTKStructuredPointArrayMixin for all
-    vtkStructuredPointArray template instantiations."""
+    """Register VTKStructuredPointArray for all vtkStructuredPointArray
+    template instantiations."""
     from vtkmodules.vtkCommonCore import vtkStructuredPointArray
 
     # Add native-type aliases so template['float64'] etc. work
     _add_template_type_aliases(vtkStructuredPointArray,
                                'vtkStructuredPointArray')
 
-    # Register the mixin for each dtype instantiation
+    # Register VTKStructuredPointArray for each dtype instantiation.  The
+    # generated override class inherits from VTKStructuredPointArray and
+    # shares its name, so isinstance(arr, VTKStructuredPointArray) holds
+    # for every instance returned by VTK.
     for dt in ('float32', 'float64',
                'int8', 'int16', 'int32', 'int64',
                'uint8', 'uint16', 'uint32', 'uint64'):
         base = vtkStructuredPointArray[dt]
         cls = type('VTKStructuredPointArray',
-                   (VTKStructuredPointArrayMixin, base),
-                   {'__doc__': VTKStructuredPointArrayMixin.__doc__})
+                   (VTKStructuredPointArray, base),
+                   {'__doc__': VTKStructuredPointArray.__doc__})
         base.override(cls)
 
 _register_structured_point_overrides()

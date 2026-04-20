@@ -1197,3 +1197,61 @@ def bincount(array, weights=None, minlength=0, **kwargs):
             return numpy.zeros(minlength, dtype=numpy.intp)
         return total
     return numpy.bincount(array, weights=weights, minlength=minlength, **kwargs)
+
+
+# VTK's invalid/empty bounds sentinel: (xmin>xmax, ymin>ymax, zmin>zmax)
+_INVALID_BOUNDS = (1e299, -1e299, 1e299, -1e299, 1e299, -1e299)
+
+
+class VTKPartitionedPoints(object):
+    """Composite-dataset analog of ``vtkPoints``.
+
+    Aggregates the ``vtkPoints`` from each non-null leaf of a
+    composite dataset and exposes a subset of the ``vtkPoints`` API.
+    The ``data`` property returns a ``VTKPartitionedArray`` wrapping
+    the per-leaf coordinate arrays, so ``composite.points.data`` is
+    numpy-indexable in the same way ``dataset.points.data`` is for
+    non-composite datasets.
+    """
+
+    def __init__(self, points):
+        self._points = list(points)
+
+    @property
+    def data(self):
+        """Numpy-indexable VTKPartitionedArray of per-leaf data arrays."""
+        arrays = [p.data if p is not None else NoneArray for p in self._points]
+        return VTKPartitionedArray(arrays)
+
+    @property
+    def number_of_points(self):
+        """Total number of points across all leaves."""
+        return _builtin_sum(
+            p.number_of_points for p in self._points if p is not None
+        )
+
+    @property
+    def bounds(self):
+        """Union of per-leaf bounds as ``(xmin, xmax, ymin, ymax, zmin, zmax)``.
+
+        Returns VTK's invalid-bounds sentinel when no leaf has points.
+        """
+        bs = [p.bounds for p in self._points if p is not None]
+        if not bs:
+            return _INVALID_BOUNDS
+        a = numpy.array(bs)
+        return (
+            float(a[:, 0].min()), float(a[:, 1].max()),
+            float(a[:, 2].min()), float(a[:, 3].max()),
+            float(a[:, 4].min()), float(a[:, 5].max()),
+        )
+
+    def __len__(self):
+        return self.number_of_points
+
+    def __iter__(self):
+        """Iterate over the per-leaf vtkPoints (skipping ``None`` leaves)."""
+        return (p for p in self._points if p is not None)
+
+    def __repr__(self):
+        return "VTKPartitionedPoints(%d points)" % self.number_of_points
