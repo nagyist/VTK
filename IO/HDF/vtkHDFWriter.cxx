@@ -4,6 +4,7 @@
 
 #include "vtkAbstractArray.h"
 #include "vtkDataAssembly.h"
+#include "vtkDataAssemblyUtilities.h"
 #include "vtkDataObjectTree.h"
 #include "vtkDataObjectTreeIterator.h"
 #include "vtkDataSet.h"
@@ -1657,11 +1658,14 @@ bool vtkHDFWriter::AppendExternalBlock(vtkDataObject* block, const std::string& 
 //------------------------------------------------------------------------------
 bool vtkHDFWriter::AppendAssembly(hid_t assemblyGroup, vtkPartitionedDataSetCollection* pdc)
 {
-  vtkDataAssembly* assembly = pdc->GetDataAssembly();
-  if (!assembly)
+  vtkSmartPointer<vtkDataAssembly> assembly = vtk::TakeSmartPointer(vtkDataAssembly::New());
+  if (pdc->GetDataAssembly())
   {
-    vtkErrorMacro(<< "Could not retrieve assembly from composite vtkPartitionedDataSetCollection");
-    return false;
+    assembly = pdc->GetDataAssembly();
+  }
+  else
+  {
+    vtkDataAssemblyUtilities::GenerateHierarchy(pdc, assembly, nullptr);
   }
 
   std::vector<int> assemblyIndices = assembly->GetChildNodes(
