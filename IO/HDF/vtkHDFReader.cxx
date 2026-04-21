@@ -1095,7 +1095,11 @@ int vtkHDFReader::Read(const std::vector<vtkIdType>& numberOfPoints,
   }
 
   vtkNew<vtkCellArray> cellArray;
-  cellArray->SetData(offsetsArray, connectivityArray);
+  if (numberOfCells[filePiece] > 0)
+  {
+    // Don't set CellArray data when there are no cells to keep the dataset coherent
+    cellArray->SetData(offsetsArray, connectivityArray);
+  }
 
   // Process polyhedrons if any
   if (!numberOfFaces.empty() || !numberOfFaceConnectivityIds.empty() ||
