@@ -318,7 +318,7 @@ void SetColorAndOpacity(
     {
       for (auto& colorProperty : colorProperties)
       {
-        property["properties"][colorProperty.c_str()][i] = atts->GetBlockColor(block)[i];
+        property["properties"][colorProperty][i] = atts->GetBlockColor(block)[i];
       }
     }
   }
