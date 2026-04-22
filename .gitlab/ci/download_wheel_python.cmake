@@ -4,7 +4,6 @@ cmake_minimum_required(VERSION 3.12)
 set(python_url_root "https://www.paraview.org/files/dependencies/python-for-wheels")
 
 # Python version specifics.
-set(python39_version "3.9.13") # Source-only releases after this.
 set(python310_version "3.10.11") # Source-only releases after this.
 set(python311_version "3.11.9") # Source-only releases after this.
 set(python312_version "3.12.7")
@@ -22,7 +21,6 @@ else ()
 endif ()
 
 # Hashes for various deployments.
-set(python39_windows_x86_64_hash "004683810c0e0b4ff10025392ac95e699e99d8c3566f415aa7fa35c6d4882f88")
 set(python310_windows_x86_64_hash "b02692c7905dea2829e4204eab2343b226f0c9f244df89502ba8d483d5f8f9d3")
 set(python311_windows_x86_64_hash "d2e7567c29d4c02b708f42a2ed0be51859df42566faee4df844b5ee00094b8a1")
 set(python312_windows_x86_64_hash "f4edfaa23ee00a9b1afc8072ea823d485496637cfeb8129057e92d05f1b80a80")
@@ -30,8 +28,6 @@ set(python313_windows_x86_64_hash "b733a8c7d8d30aa5d0742c00de419294ec38579758667
 set(python314_windows_x86_64_hash "1cf39a0c36aa6047f0982deaf400dbb327e676be60aedeef274088520a5a2887")
 set(python314t_windows_x86_64_hash "28a94269cf82bd3a4dab3229e7ebe9357e777c012b4a65608c7737b74b3b10b1")
 
-set(python39_macos_arm64_hash "e6b95bb926feff99e38bcd4986feb8897b36170a6c6c01b36da7d8e3daac5b6b")
-set(python39_macos_x86_64_hash "357fffe2efe80eef7136362db2e6616341c046dac5e26614478c7c0248c16709")
 set(python310_macos_arm64_hash "5e5a2124abfdc3bb85751e6a544ab81d0624473afe7bab41a7cb78c72e3ccc8d")
 set(python310_macos_x86_64_hash "edb762a34ea20c6876f9f583158e7f65c1a428aecea1971717fc05e26415f55b")
 set(python311_macos_arm64_hash "ea62d4a6b7b3c397280994d6204227095188c8641671286bf5a220ec95ccc637")
@@ -57,9 +53,7 @@ else ()
     "Unknown platform for Python")
 endif ()
 
-if ("$ENV{CMAKE_CONFIGURATION}" MATCHES "39_")
-  set(python_version 39)
-elseif ("$ENV{CMAKE_CONFIGURATION}" MATCHES "310_")
+if ("$ENV{CMAKE_CONFIGURATION}" MATCHES "310_")
   set(python_version 310)
 elseif ("$ENV{CMAKE_CONFIGURATION}" MATCHES "311_")
   set(python_version 311)
