@@ -327,10 +327,40 @@ void vtkCocoaHardwareWindow::SetCurrentCursor(int shape)
       cursor = [NSCursor arrowCursor];
       break;
     case VTK_CURSOR_SIZENE:
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
+      if (@available(macOS 15, *))
+      {
+        cursor = [NSCursor frameResizeCursorFromPosition:NSCursorFrameResizePositionTopRight
+                                            inDirections:NSCursorFrameResizeDirectionsAll];
+      }
+#endif
+      break;
     case VTK_CURSOR_SIZENW:
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
+      if (@available(macOS 15, *))
+      {
+        cursor = [NSCursor frameResizeCursorFromPosition:NSCursorFrameResizePositionTopLeft
+                                            inDirections:NSCursorFrameResizeDirectionsAll];
+      }
+#endif
+      break;
     case VTK_CURSOR_SIZESE:
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
+      if (@available(macOS 15, *))
+      {
+        cursor = [NSCursor frameResizeCursorFromPosition:NSCursorFrameResizePositionBottomRight
+                                            inDirections:NSCursorFrameResizeDirectionsAll];
+      }
+#endif
+      break;
     case VTK_CURSOR_SIZESW:
-      cursor = [NSCursor arrowCursor]; // No direct equivalent, use arrow
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
+      if (@available(macOS 15, *))
+      {
+        cursor = [NSCursor frameResizeCursorFromPosition:NSCursorFrameResizePositionBottomLeft
+                                            inDirections:NSCursorFrameResizeDirectionsAll];
+      }
+#endif
       break;
     case VTK_CURSOR_SIZENS:
       cursor = [NSCursor resizeUpDownCursor];
@@ -352,6 +382,13 @@ void vtkCocoaHardwareWindow::SetCurrentCursor(int shape)
       cursor = [NSCursor arrowCursor];
       break;
   }
+
+  // Worst case fallback.
+  if (!cursor)
+  {
+    cursor = [NSCursor arrowCursor];
+  }
+
   [[this->WindowId contentView] addCursorRect:[[this->WindowId contentView] bounds] cursor:cursor];
   [cursor set];
 }
