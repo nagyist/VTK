@@ -114,7 +114,7 @@ viskores_add_target_information(${vtkm_accel_target}
                             MODIFY_CUDA_FLAGS
                             DEVICE_SOURCES ${sources})
 
-if (TARGET viskores::cuda)
+if (TARGET VTK::vtkviskores_cuda)
   # Temporarily suppress "has address taken but no possible call to it" warnings,
   # until we figure out its implications.
   # We are disabling all warnings as nvlink has no known way to suppress
@@ -127,7 +127,7 @@ if (TARGET viskores::cuda)
 
   vtk_module_compile_options(VTK::AcceleratorsVTKmFilters
     PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --diag_suppress=extra_semicolon>)
-elseif (TARGET viskores::kokkos_cuda)
+elseif (TARGET VTK::vtkviskores_kokkos_cuda)
 
   list(TRANSFORM classes APPEND ".cxx" OUTPUT_VARIABLE cuda_impl)
   set_source_files_properties(${cuda_impl} PROPERTIES LANGUAGE CUDA)
@@ -153,7 +153,7 @@ if (MSVC)
     )
   set(viskores_msvc_flags)
   foreach (msvc_warning_flag IN LISTS msvc_warning_flags)
-    if (TARGET viskores::cuda OR TARGET viskores::kokkos_cuda)
+    if (TARGET VTK::vtkviskores_cuda OR TARGET VTK::vtkviskores_kokkos_cuda)
       list(APPEND viskores_msvc_flags
         $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=${msvc_warning_flag},${msvc_warning_flag}>)
     else ()

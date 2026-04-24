@@ -15,7 +15,7 @@ vtk_add_test_cxx(vtkAcceleratorsVTKmDataModelCxxTests tests
   TestVTKMDataSet.cxx,NO_VALID
   )
 
-if (TARGET viskores::cuda)
+if (TARGET VTK::vtkviskores_cuda)
   foreach(src IN LISTS tests)
     string(REPLACE "," ";" src ${src})
     list(GET src 0 src)
@@ -38,7 +38,7 @@ vtk_test_cxx_executable(vtkAcceleratorsVTKmDataModelCxxTests tests
   RENDERING_FACTORY
   )
 
-if (TARGET viskores::cuda)
+if (TARGET VTK::vtkviskores_cuda)
   # When cuda is enabled VTK::AcceleratorsVTKmDataModel is built statically but with fpic
   # enabled so the tests are also built with fpic enabled
   set_target_properties(vtkAcceleratorsVTKmDataModelCxxTests PROPERTIES

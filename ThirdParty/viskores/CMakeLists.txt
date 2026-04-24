@@ -31,3 +31,27 @@ vtk_module_third_party(
 if(VTK_MODULE_USE_EXTERNAL_vtkviskores)
   viskores_setup_job_pool()
 endif()
+
+set(viskores_specific_targets
+  cont
+  cont_testing
+  cuda
+  filter
+  kokkos_cuda
+  kokkos_hip
+  worklet)
+foreach (viskores_target IN LISTS viskores_specific_targets)
+  if (VTK_MODULE_USE_EXTERNAL_vtkviskores)
+    set(target "viskores::${viskores_target}")
+  else ()
+    set(target "viskores_${viskores_target}")
+  endif ()
+  if (NOT TARGET "${target}")
+    continue ()
+  endif()
+
+  add_library("vtkviskores_${viskores_target}" INTERFACE)
+  target_link_libraries("vtkviskores_${viskores_target}" INTERFACE "${target}")
+  _vtk_module_install("vtkviskores_${viskores_target}")
+  add_library("VTK::vtkviskores_${viskores_target}" ALIAS "vtkviskores_${viskores_target}")
+endforeach ()

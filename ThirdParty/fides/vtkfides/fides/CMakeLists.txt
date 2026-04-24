@@ -103,9 +103,7 @@ vtk_module_link(VTK::fides
   PRIVATE
     adios2::adios2
     fides_rapidjson
-    # This is over-linking (just need ::worklet) but VTK doesn't forward the
-    # inner targets currently.
-    VTK::vtkviskores
+    VTK::vtkviskores_worklet
   )
 vtk_module_include(VTK::fides
   PUBLIC

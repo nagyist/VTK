@@ -1,5 +1,5 @@
 vtk_module_add_module(VTK::vtkvtkm HEADER_ONLY)
-vtk_module_link(VTK::vtkvtkm INTERFACE VTK::viskores)
+vtk_module_link(VTK::vtkvtkm INTERFACE VTK::vtkviskores)
 
 set(deprecation_warning "Target VTK::vtkvtkm deprecated, VTK::vtkviskores enabled.")
 message(DEPRECATION "${deprecation_warning}")

@@ -31,7 +31,7 @@ if (TARGET VTK::ParallelMPI)
   vtk_test_cxx_executable(vtkConduitCxxTests-MPI mpitests)
 endif()
 
-if (TARGET viskores::cuda)
+if (TARGET VTK::vtkviskores_cuda)
   set_source_files_properties(TestConduitSourceDeviceMemory.cxx PROPERTIES LANGUAGE CUDA)
 
 

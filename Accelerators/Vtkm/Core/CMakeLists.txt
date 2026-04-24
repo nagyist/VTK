@@ -47,7 +47,7 @@ list(TRANSFORM nowrap_classes APPEND ".cxx" OUTPUT_VARIABLE device_sources)
 if(VTK_USE_KOKKOS)
   add_compile_definitions(VTK_USE_KOKKOS)
 endif()
-if (TARGET viskores::cuda)
+if (TARGET VTK::vtkviskores_cuda)
   # Temporarily suppress "has address taken but no possible call to it" warnings,
   # until we figure out its implications.
   # We are disabling all warnings as nvlink has no known way to suppress
@@ -59,11 +59,11 @@ if (TARGET viskores::cuda)
   find_package(CUDAToolkit REQUIRED)
   vtk_module_link(VTK::AcceleratorsVTKmCore PRIVATE CUDA::cudart)
 
-elseif (TARGET viskores::kokkos_cuda)
+elseif (TARGET VTK::vtkviskores_kokkos_cuda)
   set_source_files_properties(${device_sources} PROPERTIES LANGUAGE CUDA)
   kokkos_compilation(SOURCE ${device_sources})
 
-elseif (TARGET viskores::kokkos_hip)
+elseif (TARGET VTK::vtkviskores_kokkos_hip)
   set_source_files_properties(${device_sources} PROPERTIES LANGUAGE HIP)
   kokkos_compilation(SOURCE ${device_sources})
 
@@ -87,7 +87,7 @@ if (MSVC)
     )
   set(viskores_msvc_flags)
   foreach (msvc_warning_flag IN LISTS msvc_warning_flags)
-    if (TARGET viskores::cuda)
+    if (TARGET VTK::vtkviskores_cuda)
       list(APPEND viskores_msvc_flags
         $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=${msvc_warning_flag},${msvc_warning_flag}>)
     else ()
