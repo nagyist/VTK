@@ -43,6 +43,7 @@ set(classes
   vtkPOutlineFilter
   vtkPOutlineFilterInternals
   vtkPPolyDataNormals
+  vtkPTemporalPathLineFilter
   vtkPProbeFilter
   vtkPProjectSphereFilter
   vtkPReflectionFilter

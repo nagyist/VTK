@@ -189,12 +189,15 @@ protected:
   vtkSmartPointer<vtkFloatArray> TrailId;
   vtkSmartPointer<vtkTemporalPathLineFilterInternals> Internals;
 
-  //
-private:
   void AccumulateTrails(vtkDataSet* input, vtkDataSet* selection);
+  void ClearTrailMarks();
+  void ProcessTrails(vtkDataSet* input, vtkDataSet* selection);
+  void RemoveDeadTrails();
   void PostExecute(vtkDataSet* input, vtkPolyData* pathLines, vtkPolyData* particles);
   void InitializeExecute(vtkDataSet* input, vtkPolyData* pathLines);
 
+  //
+private:
   vtkTemporalPathLineFilter(const vtkTemporalPathLineFilter&) = delete;
   void operator=(const vtkTemporalPathLineFilter&) = delete;
 };
