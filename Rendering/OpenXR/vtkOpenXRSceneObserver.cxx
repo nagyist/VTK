@@ -5,7 +5,6 @@
 
 #include "vtkCommand.h"
 #include "vtkObjectFactory.h"
-#include "vtkOpenXR.h" // For OpenXR types
 #include "vtkOpenXRManager.h"
 #include "vtkOpenXRSceneComponent.h"
 #include "vtkOpenXRUtilities.h"
@@ -23,7 +22,7 @@ vtkStandardNewMacro(vtkOpenXRSceneObserver)
 
 struct vtkOpenXRSceneObserver::vtkInternals
 {
-  vtkOpenXRManager* Manager{};
+  vtk::detail::vtkOpenXRManager* Manager{};
   xr::ExtensionDispatchTable Extensions{};
   XrSceneObserverMSFT SceneObserver{};
   XrTime NextObserverQueryTime{};
@@ -54,7 +53,7 @@ struct vtkOpenXRSceneObserver::vtkInternals
 
     XrSceneComponentsMSFT components{ XR_TYPE_SCENE_COMPONENTS_MSFT };
     components.next = &qrcodes;
-    if (!manager.XrCheckOutput(vtkOpenXRManager::WarningOutput,
+    if (!manager.XrCheckOutput(vtk::detail::vtkOpenXRManager::WarningOutput,
           ext.xrGetSceneComponentsMSFT(scene, &getInfo, &components),
           "Failed to get scene components"))
     {
@@ -76,7 +75,7 @@ struct vtkOpenXRSceneObserver::vtkInternals
     qrcodes.qrCodes = qrcodesBuffer.data();
     qrcodes.qrCodeCapacityInput = static_cast<uint32_t>(qrcodesBuffer.size());
 
-    if (!manager.XrCheckOutput(vtkOpenXRManager::WarningOutput,
+    if (!manager.XrCheckOutput(vtk::detail::vtkOpenXRManager::WarningOutput,
           ext.xrGetSceneComponentsMSFT(scene, &getInfo, &components),
           "Failed to get scene objects"))
     {
@@ -119,7 +118,7 @@ struct vtkOpenXRSceneObserver::vtkInternals
       locations.locationCount = 1;
       locations.locations = &location;
 
-      if (!manager.XrCheckOutput(vtkOpenXRManager::WarningOutput,
+      if (!manager.XrCheckOutput(vtk::detail::vtkOpenXRManager::WarningOutput,
             ext.xrLocateSceneComponentsMSFT(scene, &locateInfo, &locations),
             "Failed to get scene objects"))
       {
@@ -127,7 +126,7 @@ struct vtkOpenXRSceneObserver::vtkInternals
       }
 
       uint32_t count = 0;
-      if (!manager.XrCheckOutput(vtkOpenXRManager::WarningOutput,
+      if (!manager.XrCheckOutput(vtk::detail::vtkOpenXRManager::WarningOutput,
             ext.xrGetSceneMarkerDecodedStringMSFT(scene, &compID, 0, &count, nullptr),
             "failed to query qrcode string"))
       {
@@ -136,7 +135,7 @@ struct vtkOpenXRSceneObserver::vtkInternals
 
       std::string text;
       text.resize(count);
-      if (!manager.XrCheckOutput(vtkOpenXRManager::WarningOutput,
+      if (!manager.XrCheckOutput(vtk::detail::vtkOpenXRManager::WarningOutput,
             ext.xrGetSceneMarkerDecodedStringMSFT(
               scene, &compID, static_cast<uint32_t>(text.size()), &count, text.data()),
             "failed to query qrcode text"))
@@ -180,7 +179,7 @@ vtkOpenXRSceneObserver::~vtkOpenXRSceneObserver()
 //------------------------------------------------------------------------------
 bool vtkOpenXRSceneObserver::Initialize()
 {
-  this->Impl->Manager = &vtkOpenXRManager::GetInstance();
+  this->Impl->Manager = &vtk::detail::vtkOpenXRManager::GetInstance();
   this->Impl->Extensions.PopulateDispatchTable(this->Impl->Manager->GetXrRuntimeInstance());
   return this->CreateMSFTSceneObserver();
 }
@@ -207,7 +206,7 @@ bool vtkOpenXRSceneObserver::UpdateSceneData()
   auto& ext = this->Impl->Extensions;
 
   XrSceneComputeStateMSFT state;
-  if (!manager.XrCheckOutput(vtkOpenXRManager::WarningOutput,
+  if (!manager.XrCheckOutput(vtk::detail::vtkOpenXRManager::WarningOutput,
         ext.xrGetSceneComputeStateMSFT(this->Impl->SceneObserver, &state),
         "can not query observer state"))
   {
@@ -219,7 +218,7 @@ bool vtkOpenXRSceneObserver::UpdateSceneData()
   {
     XrSceneCreateInfoMSFT info{ XR_TYPE_SCENE_CREATE_INFO_MSFT };
     XrSceneMSFT scene;
-    if (!manager.XrCheckOutput(vtkOpenXRManager::WarningOutput,
+    if (!manager.XrCheckOutput(vtk::detail::vtkOpenXRManager::WarningOutput,
           ext.xrCreateSceneMSFT(this->Impl->SceneObserver, &info, &scene),
           "Failed to create scene"))
     {
@@ -247,7 +246,7 @@ bool vtkOpenXRSceneObserver::UpdateSceneData()
     info.bounds.spheres = &sphere;
     info.bounds.sphereCount = 1;
 
-    if (!manager.XrCheckOutput(vtkOpenXRManager::WarningOutput,
+    if (!manager.XrCheckOutput(vtk::detail::vtkOpenXRManager::WarningOutput,
           ext.xrComputeNewSceneMSFT(this->Impl->SceneObserver, &info),
           "Failed to start scene observer"))
     {
@@ -317,7 +316,7 @@ bool vtkOpenXRSceneObserver::CreateMSFTSceneObserver()
   auto& ext = this->Impl->Extensions;
   auto session = manager.GetSession();
 
-  if (!manager.XrCheckOutput(vtkOpenXRManager::WarningOutput,
+  if (!manager.XrCheckOutput(vtk::detail::vtkOpenXRManager::WarningOutput,
         ext.xrCreateSceneObserverMSFT(session, &info, &this->Impl->SceneObserver),
         "Failed to create MSFT scene observer"))
   {
@@ -329,7 +328,7 @@ bool vtkOpenXRSceneObserver::CreateMSFTSceneObserver()
 
   // Check support for markers
   uint32_t count = 0;
-  if (!manager.XrCheckOutput(vtkOpenXRManager::WarningOutput,
+  if (!manager.XrCheckOutput(vtk::detail::vtkOpenXRManager::WarningOutput,
         ext.xrEnumerateSceneComputeFeaturesMSFT(instance, systemId, 0, &count, nullptr),
         "Failed to enumerate scene compute features"))
   {
@@ -338,7 +337,7 @@ bool vtkOpenXRSceneObserver::CreateMSFTSceneObserver()
 
   std::vector<XrSceneComputeFeatureMSFT> features;
   features.resize(count);
-  if (!manager.XrCheckOutput(vtkOpenXRManager::WarningOutput,
+  if (!manager.XrCheckOutput(vtk::detail::vtkOpenXRManager::WarningOutput,
         ext.xrEnumerateSceneComputeFeaturesMSFT(instance, systemId, count, &count, features.data()),
         "Failed to enumerate scene compute features"))
   {

@@ -12,10 +12,5 @@
 
 #include "XrExtensions.h"
 
-#define HAND_COUNT 2
-
-#define LEFT_EYE 0
-#define RIGHT_EYE 1
-
 #endif
 // VTK-HeaderTest-Exclude: vtkOpenXR.h

@@ -21,8 +21,15 @@
 
 #include "vtkOpenXR.h" // For OpenXR types
 #include <vector>      // For std::vector
-VTK_ABI_NAMESPACE_BEGIN
 
+namespace vtk::detail
+{
+VTK_ABI_NAMESPACE_BEGIN
+class vtkOpenXRManager;
+VTK_ABI_NAMESPACE_END
+}
+
+VTK_ABI_NAMESPACE_BEGIN
 class vtkOpenGLRenderWindow;
 
 class VTKRENDERINGOPENXR_EXPORT vtkOpenXRManagerGraphics : public vtkObject
@@ -82,13 +89,6 @@ public:
   virtual const void* GetGraphicsBinding() = 0;
 
   /**
-   * OpenXR requires checking graphics requirements before creating a session.
-   * This uses a function pointer loaded with the selected graphics API extension.
-   * /pre The XR instance and system id must be initialized
-   */
-  virtual bool CheckGraphicsRequirements(XrInstance instance, XrSystemId id) = 0;
-
-  /**
    * Return the extension name to enable a specific rendering backend
    */
   virtual const char* GetBackendExtensionName() = 0;
@@ -96,6 +96,13 @@ public:
 protected:
   vtkOpenXRManagerGraphics() = default;
   ~vtkOpenXRManagerGraphics() override = default;
+
+  /**
+   * OpenXR requires checking graphics requirements before creating a session.
+   * This uses a function pointer loaded with the selected graphics API extension.
+   */
+  virtual bool CheckGraphicsRequirements(vtk::detail::vtkOpenXRManager& manager) = 0;
+  friend class vtk::detail::vtkOpenXRManager; // for vtkOpenXRManager::Initialize
 
 private:
   vtkOpenXRManagerGraphics(const vtkOpenXRManagerGraphics&) = delete;

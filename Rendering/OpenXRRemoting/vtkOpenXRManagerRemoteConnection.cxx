@@ -18,7 +18,7 @@
 
 #include "XrConnectionExtensions.h" // Provides holographic remoting extensions
 
-#include <chrono>
+#include <chrono> // for chrono_literals
 #include <thread> // used to sleep after connection
 
 VTK_ABI_NAMESPACE_BEGIN
@@ -87,7 +87,7 @@ bool vtkOpenXRManagerRemoteConnection::EndInitialize()
 }
 
 //------------------------------------------------------------------------------
-bool vtkOpenXRManagerRemoteConnection::ConnectToRemote(XrInstance instance, XrSystemId id)
+bool vtkOpenXRManagerRemoteConnection::ConnectToRemote(vtk::detail::vtkOpenXRManager& manager)
 {
   if (this->IPAddress.empty())
   {
@@ -97,8 +97,9 @@ bool vtkOpenXRManagerRemoteConnection::ConnectToRemote(XrInstance instance, XrSy
 
   XrRemotingConnectionStateMSFT connectionState;
   xr::ConnectionExtensionDispatchTable extensions;
-  extensions.PopulateDispatchTable(instance);
-  extensions.xrRemotingGetConnectionStateMSFT(instance, id, &connectionState, nullptr);
+  extensions.PopulateDispatchTable(manager.GetXrRuntimeInstance());
+  extensions.xrRemotingGetConnectionStateMSFT(
+    manager.GetXrRuntimeInstance(), manager.GetSystemID(), &connectionState, nullptr);
   if (connectionState != XR_REMOTING_CONNECTION_STATE_DISCONNECTED_MSFT)
   {
     vtkErrorMacro("Error connecting to " << this->IPAddress << ": " << connectionState);
@@ -116,7 +117,8 @@ bool vtkOpenXRManagerRemoteConnection::ConnectToRemote(XrInstance instance, XrSy
     contextProperties.depthBufferStreamResolution =
       XR_REMOTING_DEPTH_BUFFER_STREAM_RESOLUTION_HALF_MSFT;
 
-    extensions.xrRemotingSetContextPropertiesMSFT(instance, id, &contextProperties);
+    extensions.xrRemotingSetContextPropertiesMSFT(
+      manager.GetXrRuntimeInstance(), manager.GetSystemID(), &contextProperties);
   }
 
   XrRemotingConnectInfoMSFT connectInfo{ static_cast<XrStructureType>(
@@ -125,8 +127,11 @@ bool vtkOpenXRManagerRemoteConnection::ConnectToRemote(XrInstance instance, XrSy
   connectInfo.remotePort = 8265;
   connectInfo.secureConnection = false;
 
-  if (!vtkOpenXRManager::GetInstance().XrCheckOutput(vtkOpenXRManager::ErrorOutput,
-        extensions.xrRemotingConnectMSFT(instance, id, &connectInfo), "Failed to connect"))
+  if (!vtk::detail::vtkOpenXRManager::GetInstance().XrCheckOutput(
+        vtk::detail::vtkOpenXRManager::ErrorOutput,
+        extensions.xrRemotingConnectMSFT(
+          manager.GetXrRuntimeInstance(), manager.GetSystemID(), &connectInfo),
+        "Failed to connect"))
   {
     return false;
   }
@@ -143,27 +148,4 @@ const char* vtkOpenXRManagerRemoteConnection::GetExtensionName()
   return XR_MSFT_HOLOGRAPHIC_REMOTING_EXTENSION_NAME;
 }
 
-//------------------------------------------------------------------------------
-bool vtkOpenXRManagerRemoteConnection::HandleXrEvent(const XrEventDataBuffer& eventData)
-{
-  switch ((XrRemotingStructureType)eventData.type)
-  {
-    case XR_TYPE_REMOTING_EVENT_DATA_CONNECTED_MSFT:
-    {
-      vtkDebugMacro("Holographic Remoting: Connected.");
-      return true;
-    }
-    case XR_TYPE_REMOTING_EVENT_DATA_DISCONNECTED_MSFT:
-    {
-      vtkDebugMacro("Holographic Remoting: Disconnected.");
-      return true;
-    }
-    default:
-    {
-      break;
-    }
-  }
-
-  return false;
-}
 VTK_ABI_NAMESPACE_END

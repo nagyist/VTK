@@ -5,6 +5,7 @@
 #include "vtkObjectFactory.h"
 #include "vtkOpenGLState.h"
 #include "vtkOpenXRInteractorStyle.h"
+#include "vtkOpenXRManager.h"
 #include "vtkOpenXRRenderWindow.h"
 #include "vtkOpenXRUtilities.h"
 #include "vtkResourceFileLocator.h"
@@ -12,6 +13,8 @@
 #include "vtkVersion.h"
 
 #include "vtk_jsoncpp.h"
+#include <memory>
+#include <string>
 #include <vtksys/FStream.hxx>
 #include <vtksys/SystemTools.hxx>
 
@@ -19,8 +22,78 @@ VTK_ABI_NAMESPACE_BEGIN
 vtkStandardNewMacro(vtkOpenXRRenderWindowInteractor);
 
 //------------------------------------------------------------------------------
+
+class vtkOpenXRRenderWindowInteractor::vtkInternal
+{
+private:
+  vtkOpenXRRenderWindowInteractor* Interactor;
+
+public:
+  vtkInternal(vtkOpenXRRenderWindowInteractor* rwi)
+    : Interactor(rwi)
+  {
+  }
+
+  /**
+   * Return the XrPosef for the action named "handpose"
+   * and the hand \p hand or return nullptr if "handpose"
+   * does not exist in the map.
+   */
+  XrPosef* GetHandPose(uint32_t hand);
+
+  void ConvertOpenXRPoseToWorldCoordinates(const XrPosef& xrPose,
+    double pos[3],   // Output world position
+    double wxyz[4],  // Output world orientation quaternion
+    double ppos[3],  // Output physical position
+    double wdir[3]); // Output world view direction (-Z)
+
+  /**
+   * Process OpenXR specific events.
+   */
+  void ProcessXrEvents();
+
+  /**
+   * Update the action states using the OpenXRManager
+   * and handle all actions.
+   */
+  void PollXrActions();
+
+  struct ActionData;
+
+  XrActionType GetActionTypeFromString(const std::string& type);
+  bool LoadActions(const std::string& actionFilename);
+  bool LoadDefaultBinding(const std::string& bindingFilename);
+  ActionData* GetActionDataFromName(const std::string& actionName);
+
+  void HandleAction(const ActionData& actionData, int hand, vtkEventDataDevice3D* ed);
+  void HandleBooleanAction(const ActionData& actionData, int hand, vtkEventDataDevice3D* ed);
+  void HandlePoseAction(const ActionData& actionData, int hand, vtkEventDataDevice3D* ed);
+  void HandleVector2fAction(const ActionData& actionData, int hand, vtkEventDataDevice3D* ed);
+  void ApplyAction(const ActionData& actionData, vtkEventDataDevice3D* ed);
+
+  struct ActionData
+  {
+    std::string Name;
+
+    vtkEventDataDeviceInput DeviceInput = vtkEventDataDeviceInput::Unknown;
+
+    // This structure is defined in vtkOpenXRManager
+    // And hold OpenXR related data
+    vtk::detail::vtkOpenXRManager::Action_t ActionStruct{ XR_NULL_HANDLE };
+
+    vtkCommand::EventIds EventId;
+    std::function<void(vtkEventData*)> Function;
+    bool UseFunction = false;
+  };
+
+  using MapAction = std::map<std::string, std::unique_ptr<ActionData>>;
+  MapAction MapActionStruct_Name;
+};
+
+//------------------------------------------------------------------------------
 // Construct object so that light follows camera motion.
 vtkOpenXRRenderWindowInteractor::vtkOpenXRRenderWindowInteractor()
+  : Internal(std::make_unique<vtkInternal>(this))
 {
   // This will create the actions name and store it in ActionMap
   vtkNew<vtkOpenXRInteractorStyle> style;
@@ -37,30 +110,20 @@ vtkOpenXRRenderWindowInteractor::vtkOpenXRRenderWindowInteractor()
 }
 
 //------------------------------------------------------------------------------
-vtkOpenXRRenderWindowInteractor::~vtkOpenXRRenderWindowInteractor()
-{
-  MapAction::iterator it;
-  for (it = this->MapActionStruct_Name.begin(); it != this->MapActionStruct_Name.end(); ++it)
-  {
-    ActionData* actionData = it->second;
-    delete actionData;
-  }
-
-  MapActionStruct_Name.clear();
-}
+vtkOpenXRRenderWindowInteractor::~vtkOpenXRRenderWindowInteractor() = default;
 
 //------------------------------------------------------------------------------
 void vtkOpenXRRenderWindowInteractor::DoOneEvent(
   vtkVRRenderWindow* renWin, vtkRenderer* vtkNotUsed(ren))
 {
-  this->ProcessXrEvents();
+  this->Internal->ProcessXrEvents();
 
-  if (this->Done || !vtkOpenXRManager::GetInstance().IsSessionRunning())
+  if (this->Done || !vtk::detail::vtkOpenXRManager::GetInstance().IsSessionRunning())
   {
     return;
   }
 
-  this->PollXrActions();
+  this->Internal->PollXrActions();
 
   if (this->RecognizeGestures)
   {
@@ -73,9 +136,9 @@ void vtkOpenXRRenderWindowInteractor::DoOneEvent(
 }
 
 //------------------------------------------------------------------------------
-void vtkOpenXRRenderWindowInteractor::ProcessXrEvents()
+void vtkOpenXRRenderWindowInteractor::vtkInternal::ProcessXrEvents()
 {
-  vtkOpenXRManager& xrManager = vtkOpenXRManager::GetInstance();
+  auto& xrManager = vtk::detail::vtkOpenXRManager::GetInstance();
 
   XrEventDataBuffer eventData{};
   while (xrManager.PollEvent(eventData))
@@ -85,7 +148,8 @@ void vtkOpenXRRenderWindowInteractor::ProcessXrEvents()
       // We lost some data
       case XR_TYPE_EVENT_DATA_EVENTS_LOST:
       {
-        vtkDebugMacro(<< "OpenXR event [XR_TYPE_EVENT_DATA_EVENTS_LOST] : some events data lost!");
+        vtkDebugWithObjectMacro(this->Interactor,
+          << "OpenXR event [XR_TYPE_EVENT_DATA_EVENTS_LOST] : some events data lost!");
         // do we care if the runtime loses events?
         break;
       }
@@ -93,9 +157,9 @@ void vtkOpenXRRenderWindowInteractor::ProcessXrEvents()
       //
       case XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING:
       {
-        vtkWarningMacro(
+        vtkWarningWithObjectMacro(this->Interactor,
           << "OpenXR event [XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING] : exit render loop.");
-        this->Done = true;
+        this->Interactor->Done = true;
         return;
       }
 
@@ -106,32 +170,36 @@ void vtkOpenXRRenderWindowInteractor::ProcessXrEvents()
           *reinterpret_cast<const XrEventDataSessionStateChanged*>(&eventData);
         if (stateEvent.session != xrManager.GetSession())
         {
-          vtkErrorMacro(<< "OpenXR event [XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED] : session is "
-                           "different than this->Session. Aborting.");
-          this->Done = true;
+          vtkErrorWithObjectMacro(this->Interactor,
+            << "OpenXR event [XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED] : session is "
+               "different than this->Session. Aborting.");
+          this->Interactor->Done = true;
           return;
         }
         switch (stateEvent.state)
         {
           case XR_SESSION_STATE_READY:
           {
-            vtkDebugMacro(<< "OpenXR event [XR_SESSION_STATE_READY] : Begin session");
+            vtkDebugWithObjectMacro(
+              this->Interactor, << "OpenXR event [XR_SESSION_STATE_READY] : Begin session");
             xrManager.BeginSession();
             break;
           }
           case XR_SESSION_STATE_STOPPING:
-            vtkDebugMacro(<< "OpenXR event [XR_SESSION_STATE_STOPPING]");
+            vtkDebugWithObjectMacro(
+              this->Interactor, << "OpenXR event [XR_SESSION_STATE_STOPPING]");
             [[fallthrough]];
           case XR_SESSION_STATE_LOSS_PENDING:
             // Session was lost, so start over and poll for new systemId.
-            vtkDebugMacro(<< "OpenXR event [XR_SESSION_STATE_LOSS_PENDING]");
+            vtkDebugWithObjectMacro(
+              this->Interactor, << "OpenXR event [XR_SESSION_STATE_LOSS_PENDING]");
             [[fallthrough]];
           case XR_SESSION_STATE_EXITING:
           {
             // Do not attempt to restart, because user closed this session.
-            vtkDebugMacro(<< "OpenXR event [XR_SESSION_STATE_EXITING]");
-            vtkDebugMacro(<< "Exit render loop.");
-            this->Done = true;
+            vtkDebugWithObjectMacro(this->Interactor, << "OpenXR event [XR_SESSION_STATE_EXITING]");
+            vtkDebugWithObjectMacro(this->Interactor, << "Exit render loop.");
+            this->Interactor->Done = true;
             break;
           }
           default:
@@ -141,7 +209,8 @@ void vtkOpenXRRenderWindowInteractor::ProcessXrEvents()
       }
       case XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING:
       {
-        vtkDebugMacro(<< "OpenXR event [XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING]");
+        vtkDebugWithObjectMacro(
+          this->Interactor, << "OpenXR event [XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING]");
         const auto stateEvent =
           *reinterpret_cast<const XrEventDataReferenceSpaceChangePending*>(&eventData);
         (void)stateEvent;
@@ -150,17 +219,18 @@ void vtkOpenXRRenderWindowInteractor::ProcessXrEvents()
 
       case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED:
       {
-        vtkDebugMacro(<< "OpenXR event [XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED]");
+        vtkDebugWithObjectMacro(
+          this->Interactor, << "OpenXR event [XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED]");
         const auto stateEvent =
           *reinterpret_cast<const XrEventDataInteractionProfileChanged*>(&eventData);
         (void)stateEvent;
 
         XrInteractionProfileState state{ XR_TYPE_INTERACTION_PROFILE_STATE };
 
-        for (uint32_t hand :
-          { vtkOpenXRManager::ControllerIndex::Left, vtkOpenXRManager::ControllerIndex::Right })
+        for (uint32_t hand : { vtk::detail::vtkOpenXRManager::ControllerIndex::Left,
+               vtk::detail::vtkOpenXRManager::ControllerIndex::Right })
         {
-          if (!xrManager.XrCheckOutput(vtkOpenXRManager::WarningOutput,
+          if (!xrManager.XrCheckOutput(vtk::detail::vtkOpenXRManager::WarningOutput,
                 xrGetCurrentInteractionProfile(
                   xrManager.GetSession(), xrManager.GetSubactionPaths()[hand], &state),
                 "Failed to get interaction profile for hand " + vtk::to_string(hand)))
@@ -172,13 +242,13 @@ void vtkOpenXRRenderWindowInteractor::ProcessXrEvents()
 
           if (!interactionProfile)
           {
-            vtkDebugMacro(<< "No interaction profile set");
+            vtkDebugWithObjectMacro(this->Interactor, << "No interaction profile set");
             continue;
           }
 
           uint32_t strLength;
           char profileString[XR_MAX_PATH_LENGTH];
-          if (!xrManager.XrCheckOutput(vtkOpenXRManager::WarningOutput,
+          if (!xrManager.XrCheckOutput(vtk::detail::vtkOpenXRManager::WarningOutput,
                 xrPathToString(xrManager.GetXrRuntimeInstance(), interactionProfile,
                   XR_MAX_PATH_LENGTH, &strLength, profileString),
                 "Failed to get interaction profile path string for hand " + vtk::to_string(hand)))
@@ -186,12 +256,14 @@ void vtkOpenXRRenderWindowInteractor::ProcessXrEvents()
             continue;
           }
 
-          vtkDebugMacro(<< "Interaction profile changed for " << hand << ": " << profileString);
+          vtkDebugWithObjectMacro(this->Interactor,
+            << "Interaction profile changed for " << hand << ": " << profileString);
 
-          auto renWin = vtkOpenXRRenderWindow::SafeDownCast(this->RenderWindow);
+          auto renWin = vtkOpenXRRenderWindow::SafeDownCast(this->Interactor->RenderWindow);
           if (!renWin)
           {
-            vtkErrorMacro("Unable to retrieve the OpenXR render window !");
+            vtkErrorWithObjectMacro(
+              this->Interactor, "Unable to retrieve the OpenXR render window !");
             return;
           }
 
@@ -202,12 +274,6 @@ void vtkOpenXRRenderWindowInteractor::ProcessXrEvents()
       }
       default:
       {
-        // Give a chance to the manager to handle connection events
-        if (!xrManager.GetConnectionStrategy()->HandleXrEvent(eventData))
-        {
-          vtkWarningMacro(<< "Unhandled event type "
-                          << vtkOpenXRUtilities::GetStructureTypeAsString(eventData.type));
-        }
         break;
       }
     }
@@ -215,40 +281,42 @@ void vtkOpenXRRenderWindowInteractor::ProcessXrEvents()
 }
 
 //------------------------------------------------------------------------------
-void vtkOpenXRRenderWindowInteractor::ConvertOpenXRPoseToWorldCoordinates(const XrPosef& xrPose,
+void vtkOpenXRRenderWindowInteractor::vtkInternal::ConvertOpenXRPoseToWorldCoordinates(
+  const XrPosef& xrPose,
   double pos[3],  // Output world position
   double wxyz[4], // Output world orientation quaternion
   double ppos[3], // Output physical position
   double wdir[3]) // Output world view direction (-Z)
 {
-  vtkOpenXRUtilities::SetMatrixFromXrPose(this->PoseToWorldMatrix, xrPose);
-  this->ConvertPoseToWorldCoordinates(this->PoseToWorldMatrix, pos, wxyz, ppos, wdir);
+  vtkOpenXRUtilities::SetMatrixFromXrPose(this->Interactor->PoseToWorldMatrix, xrPose);
+  this->Interactor->ConvertPoseToWorldCoordinates(
+    this->Interactor->PoseToWorldMatrix, pos, wxyz, ppos, wdir);
 }
 
 //------------------------------------------------------------------------------
-void vtkOpenXRRenderWindowInteractor::PollXrActions()
+void vtkOpenXRRenderWindowInteractor::vtkInternal::PollXrActions()
 {
   // Update the action states by syncing using the active action set
-  vtkOpenXRManager::GetInstance().SyncActions();
+  vtk::detail::vtkOpenXRManager::GetInstance().SyncActions();
 
   // Iterate over all actions and update their data
   MapAction::iterator it;
   for (it = this->MapActionStruct_Name.begin(); it != this->MapActionStruct_Name.end(); ++it)
   {
-    ActionData* actionData = it->second;
+    ActionData* actionData = it->second.get();
 
     // Update the state of the actions for left and right hands separately.
-    for (uint32_t hand :
-      { vtkOpenXRManager::ControllerIndex::Left, vtkOpenXRManager::ControllerIndex::Right })
+    for (uint32_t hand : { vtk::detail::vtkOpenXRManager::ControllerIndex::Left,
+           vtk::detail::vtkOpenXRManager::ControllerIndex::Right })
     {
-      vtkOpenXRManager::GetInstance().UpdateActionData(actionData->ActionStruct, hand);
+      vtk::detail::vtkOpenXRManager::GetInstance().UpdateActionData(actionData->ActionStruct, hand);
     }
   }
 
-  auto renWin = vtkOpenXRRenderWindow::SafeDownCast(this->RenderWindow);
+  auto renWin = vtkOpenXRRenderWindow::SafeDownCast(this->Interactor->RenderWindow);
   if (!renWin)
   {
-    vtkErrorMacro("Unable to retrieve the OpenXR render window !");
+    vtkErrorWithObjectMacro(this->Interactor, "Unable to retrieve the OpenXR render window !");
     return;
   }
 
@@ -258,8 +326,8 @@ void vtkOpenXRRenderWindowInteractor::PollXrActions()
   double wxyz[4] = { 0.0 };
   double wdir[3] = { 0.0 };
   std::array<vtkSmartPointer<vtkEventDataDevice3D>, 2> eventDatas;
-  for (const uint32_t hand :
-    { vtkOpenXRManager::ControllerIndex::Left, vtkOpenXRManager::ControllerIndex::Right })
+  for (const uint32_t hand : { vtk::detail::vtkOpenXRManager::ControllerIndex::Left,
+         vtk::detail::vtkOpenXRManager::ControllerIndex::Right })
   {
     // XXX GetHandPose should be replaced by the use of generic API for retrieving devices poses
     // (see DeviceHandles in vtkVRRenderWindow) in a future refactoring of OpenXR classes.
@@ -268,7 +336,7 @@ void vtkOpenXRRenderWindowInteractor::PollXrActions()
     {
       this->ConvertOpenXRPoseToWorldCoordinates(*handPose, pos, wxyz, ppos, wdir);
       auto edHand = vtkEventDataDevice3D::New();
-      edHand->SetDevice(hand == vtkOpenXRManager::ControllerIndex::Right
+      edHand->SetDevice(hand == vtk::detail::vtkOpenXRManager::ControllerIndex::Right
           ? vtkEventDataDevice::RightController
           : vtkEventDataDevice::LeftController);
       edHand->SetWorldPosition(pos);
@@ -278,9 +346,9 @@ void vtkOpenXRRenderWindowInteractor::PollXrActions()
 
       // We should remove this and use event data directly
       int pointerIndex = static_cast<int>(edHand->GetDevice());
-      this->SetPhysicalEventPosition(ppos[0], ppos[1], ppos[2], pointerIndex);
-      this->SetWorldEventPosition(pos[0], pos[1], pos[2], pointerIndex);
-      this->SetWorldEventOrientation(wxyz[0], wxyz[1], wxyz[2], wxyz[3], pointerIndex);
+      this->Interactor->SetPhysicalEventPosition(ppos[0], ppos[1], ppos[2], pointerIndex);
+      this->Interactor->SetWorldEventPosition(pos[0], pos[1], pos[2], pointerIndex);
+      this->Interactor->SetWorldEventOrientation(wxyz[0], wxyz[1], wxyz[2], wxyz[3], pointerIndex);
 
       // Update DeviceToPhysical matrices, this is a read-write access!
       vtkMatrix4x4* devicePose = renWin->GetDeviceToPhysicalMatrixForDevice(edHand->GetDevice());
@@ -294,10 +362,10 @@ void vtkOpenXRRenderWindowInteractor::PollXrActions()
   // All actions are now updated, handle them now
   for (it = this->MapActionStruct_Name.begin(); it != this->MapActionStruct_Name.end(); ++it)
   {
-    ActionData* actionData = it->second;
+    ActionData* actionData = it->second.get();
 
-    for (uint32_t hand :
-      { vtkOpenXRManager::ControllerIndex::Left, vtkOpenXRManager::ControllerIndex::Right })
+    for (uint32_t hand : { vtk::detail::vtkOpenXRManager::ControllerIndex::Left,
+           vtk::detail::vtkOpenXRManager::ControllerIndex::Right })
     {
       vtkEventDataDevice3D* eventData = eventDatas[hand];
 
@@ -330,7 +398,7 @@ void vtkOpenXRRenderWindowInteractor::PollXrActions()
   }
   // XXX In future developments, consider adding a function extracting position and orientation in
   // world coordinates directly from a pose matrix in world coordinates
-  this->ConvertPoseToWorldCoordinates(poseMatrix, pos, wxyz, ppos, wdir);
+  this->Interactor->ConvertPoseToWorldCoordinates(poseMatrix, pos, wxyz, ppos, wdir);
 
   // Generate "head movement" event
   vtkNew<vtkEventDataDevice3D> edd;
@@ -338,37 +406,28 @@ void vtkOpenXRRenderWindowInteractor::PollXrActions()
   edd->SetWorldOrientation(wxyz);
   edd->SetWorldDirection(wdir);
   edd->SetDevice(vtkEventDataDevice::HeadMountedDisplay);
-  this->InvokeEvent(vtkCommand::Move3DEvent, edd);
+  this->Interactor->InvokeEvent(vtkCommand::Move3DEvent, edd);
 }
 
 //------------------------------------------------------------------------------
-XrPosef* vtkOpenXRRenderWindowInteractor::GetHandPose(uint32_t hand)
+XrPosef* vtkOpenXRRenderWindowInteractor::vtkInternal::GetHandPose(uint32_t hand)
 {
   if (this->MapActionStruct_Name.count("handpose") == 0)
   {
     return nullptr;
   }
 
-  ActionData* adHandPose = this->MapActionStruct_Name["handpose"];
+  ActionData* adHandPose = this->MapActionStruct_Name["handpose"].get();
   return &(adHandPose->ActionStruct.PoseLocations[hand].pose);
 }
 
 //------------------------------------------------------------------------------
-void vtkOpenXRRenderWindowInteractor::HandleAction(
+void vtkOpenXRRenderWindowInteractor::vtkInternal::HandleAction(
   const ActionData& actionData, const int hand, vtkEventDataDevice3D* ed)
 {
-  const Action_t& actionT = actionData.ActionStruct;
+  const auto& actionT = actionData.ActionStruct;
   switch (actionT.ActionType)
   {
-    /*case XR_ACTION_TYPE_FLOAT_INPUT:
-      actionT.States[hand]._float.type = XR_TYPE_ACTION_STATE_FLOAT;
-      actionT.States[hand]._float.next = nullptr;
-      if (!this->XrCheckOutput(vtkOpenXRManager::ErrorOutput, xrGetActionStateFloat(Session, &info,
-      &action_t.States[hand]._float), "Failed to get float value"))
-      {
-        return false;
-      }
-      break;*/
     case XR_ACTION_TYPE_BOOLEAN_INPUT:
       this->HandleBooleanAction(actionData, hand, ed);
       break;
@@ -384,10 +443,10 @@ void vtkOpenXRRenderWindowInteractor::HandleAction(
 }
 
 //------------------------------------------------------------------------------
-void vtkOpenXRRenderWindowInteractor::ApplyAction(
+void vtkOpenXRRenderWindowInteractor::vtkInternal::ApplyAction(
   const ActionData& actionData, vtkEventDataDevice3D* ed)
 {
-  this->SetPointerIndex(static_cast<int>(ed->GetDevice()));
+  this->Interactor->SetPointerIndex(static_cast<int>(ed->GetDevice()));
 
   if (actionData.UseFunction)
   {
@@ -395,18 +454,18 @@ void vtkOpenXRRenderWindowInteractor::ApplyAction(
   }
   else
   {
-    this->InvokeEvent(actionData.EventId, ed);
+    this->Interactor->InvokeEvent(actionData.EventId, ed);
   }
 }
 
 //------------------------------------------------------------------------------
-void vtkOpenXRRenderWindowInteractor::HandleBooleanAction(
+void vtkOpenXRRenderWindowInteractor::vtkInternal::HandleBooleanAction(
   const ActionData& actionData, const int hand, vtkEventDataDevice3D* ed)
 {
   XrActionStateBoolean value = actionData.ActionStruct.States[hand]._boolean;
 
   // Set the active state of the model
-  vtkOpenXRRenderWindow::SafeDownCast(this->RenderWindow)
+  vtkOpenXRRenderWindow::SafeDownCast(this->Interactor->RenderWindow)
     ->SetModelActiveState(hand, value.isActive);
 
   // Do nothing if the controller is inactive
@@ -417,8 +476,9 @@ void vtkOpenXRRenderWindowInteractor::HandleBooleanAction(
 
   if (value.changedSinceLastSync)
   {
-    vtkDebugMacro(<< "Boolean action \"" << actionData.Name << "\" is triggered with value "
-                  << value.currentState << " for hand " << hand);
+    vtkDebugWithObjectMacro(this->Interactor, << "Boolean action \"" << actionData.Name
+                                              << "\" is triggered with value " << value.currentState
+                                              << " for hand " << hand);
 
     if (value.currentState == 1)
     {
@@ -434,13 +494,14 @@ void vtkOpenXRRenderWindowInteractor::HandleBooleanAction(
 }
 
 //------------------------------------------------------------------------------
-void vtkOpenXRRenderWindowInteractor::HandlePoseAction(
+void vtkOpenXRRenderWindowInteractor::vtkInternal::HandlePoseAction(
   const ActionData& actionData, const int hand, vtkEventDataDevice3D* ed)
 {
   XrActionStatePose pose = actionData.ActionStruct.States[hand]._pose;
 
   // Set the active state of the model
-  vtkOpenXRRenderWindow::SafeDownCast(this->RenderWindow)->SetModelActiveState(hand, pose.isActive);
+  vtkOpenXRRenderWindow::SafeDownCast(this->Interactor->RenderWindow)
+    ->SetModelActiveState(hand, pose.isActive);
   // Do nothing if the controller is inactive
   if (!pose.isActive)
   {
@@ -451,13 +512,13 @@ void vtkOpenXRRenderWindowInteractor::HandlePoseAction(
 }
 
 //------------------------------------------------------------------------------
-void vtkOpenXRRenderWindowInteractor::HandleVector2fAction(
+void vtkOpenXRRenderWindowInteractor::vtkInternal::HandleVector2fAction(
   const ActionData& actionData, const int hand, vtkEventDataDevice3D* ed)
 {
   XrActionStateVector2f vec2f = actionData.ActionStruct.States[hand]._vec2f;
 
   // Set the active state of the model
-  vtkOpenXRRenderWindow::SafeDownCast(this->RenderWindow)
+  vtkOpenXRRenderWindow::SafeDownCast(this->Interactor->RenderWindow)
     ->SetModelActiveState(hand, vec2f.isActive);
   // Do nothing if the controller is inactive
   if (!vec2f.isActive)
@@ -467,8 +528,9 @@ void vtkOpenXRRenderWindowInteractor::HandleVector2fAction(
 
   if (vec2f.changedSinceLastSync)
   {
-    vtkDebugMacro(<< "Vector2f : " << actionData.Name << ", x = " << vec2f.currentState.x
-                  << " / y = " << vec2f.currentState.y);
+    vtkDebugWithObjectMacro(this->Interactor, << "Vector2f : " << actionData.Name
+                                              << ", x = " << vec2f.currentState.x
+                                              << " / y = " << vec2f.currentState.y);
 
     ed->SetTrackPadPosition(vec2f.currentState.x, vec2f.currentState.y);
 
@@ -487,13 +549,12 @@ void vtkOpenXRRenderWindowInteractor::AddAction(
 void vtkOpenXRRenderWindowInteractor::AddAction(
   const std::string& path, const vtkCommand::EventIds& eid)
 {
-  if (this->MapActionStruct_Name.count(path) == 0)
+  if (this->Internal->MapActionStruct_Name.count(path) == 0)
   {
-    ActionData* am = new ActionData();
-    this->MapActionStruct_Name[path] = am;
+    this->Internal->MapActionStruct_Name[path] = std::make_unique<vtkInternal::ActionData>();
   }
 
-  auto* am = this->MapActionStruct_Name[path];
+  auto& am = this->Internal->MapActionStruct_Name[path];
   am->EventId = eid;
   am->UseFunction = false;
 }
@@ -509,13 +570,12 @@ void vtkOpenXRRenderWindowInteractor::AddAction(const std::string& path, bool vt
 void vtkOpenXRRenderWindowInteractor::AddAction(
   const std::string& path, const std::function<void(vtkEventData*)>& func)
 {
-  if (this->MapActionStruct_Name.count(path) == 0)
+  if (this->Internal->MapActionStruct_Name.count(path) == 0)
   {
-    ActionData* am = new ActionData();
-    this->MapActionStruct_Name[path] = am;
+    this->Internal->MapActionStruct_Name[path] = std::make_unique<vtkInternal::ActionData>();
   }
 
-  auto* am = this->MapActionStruct_Name[path];
+  auto& am = this->Internal->MapActionStruct_Name[path];
   am->UseFunction = true;
   am->Function = func;
 }
@@ -554,7 +614,7 @@ void vtkOpenXRRenderWindowInteractor::Initialize()
   std::string fullpath = vtksys::SystemTools::CollapseFullPath(
     this->ActionManifestDirectory + this->ActionManifestFileName);
 
-  if (!this->LoadActions(fullpath))
+  if (!this->Internal->LoadActions(fullpath))
   {
     vtkErrorMacro(<< "Failed to load actions.");
     this->Initialized = false;
@@ -563,7 +623,7 @@ void vtkOpenXRRenderWindowInteractor::Initialize()
 
   // All action sets have been created, so
   // We can now attach the action sets to the session
-  if (!vtkOpenXRManager::GetInstance().AttachSessionActionSets())
+  if (!vtk::detail::vtkOpenXRManager::GetInstance().AttachSessionActionSets())
   {
     this->Initialized = false;
     return;
@@ -571,9 +631,9 @@ void vtkOpenXRRenderWindowInteractor::Initialize()
 }
 
 //------------------------------------------------------------------------------
-bool vtkOpenXRRenderWindowInteractor::LoadActions(const std::string& actionFilename)
+bool vtkOpenXRRenderWindowInteractor::vtkInternal::LoadActions(const std::string& actionFilename)
 {
-  vtkDebugMacro(<< "LoadActions from file : " << actionFilename);
+  vtkDebugWithObjectMacro(this->Interactor, << "LoadActions from file : " << actionFilename);
   // As OpenXR does not yet have a way to pass a file to create actions
   // We need to create them programmatically, so we parse it with JsonCpp
   Json::Value root;
@@ -583,7 +643,8 @@ bool vtkOpenXRRenderWindowInteractor::LoadActions(const std::string& actionFilen
   file.open(actionFilename.c_str());
   if (!file.is_open())
   {
-    vtkErrorMacro(<< "Unable to open openXR action file : " << actionFilename);
+    vtkErrorWithObjectMacro(
+      this->Interactor, << "Unable to open openXR action file : " << actionFilename);
     return false;
   }
 
@@ -594,31 +655,33 @@ bool vtkOpenXRRenderWindowInteractor::LoadActions(const std::string& actionFilen
   if (!Json::parseFromStream(builder, file, &root, &formattedErrors))
   {
     // Report failures and their locations in the document
-    vtkErrorMacro(<< "Failed to parse action file with errors :" << endl << formattedErrors);
+    vtkErrorWithObjectMacro(this->Interactor, << "Failed to parse action file with errors :" << endl
+                                              << formattedErrors);
     return false;
   }
 
   // Create an action set
   std::string localizedActionSetName = "VTK actions";
-  vtkOpenXRManager::GetInstance().CreateActionSet(this->ActionSetName, localizedActionSetName);
+  vtk::detail::vtkOpenXRManager::GetInstance().CreateActionSet(
+    this->Interactor->ActionSetName, localizedActionSetName);
 
   // We must select an action set to create actions
   // For instance only one action set so select it
   // Improvement: select each action set and create all actions
   // that belong to it
-  vtkOpenXRManager::GetInstance().SelectActiveActionSet(0);
+  vtk::detail::vtkOpenXRManager::GetInstance().SelectActiveActionSet(0);
 
   // Create actions
   Json::Value actions = root["actions"];
   if (actions.isNull())
   {
-    vtkErrorMacro(<< "Parse openxr_actions: Missing actions node");
+    vtkErrorWithObjectMacro(this->Interactor, << "Parse openxr_actions: Missing actions node");
     return false;
   }
   Json::Value localization = root["localization"];
   if (localization.isNull())
   {
-    vtkErrorMacro(<< "Parse openxr_actions: Missing localization node");
+    vtkErrorWithObjectMacro(this->Interactor, << "Parse openxr_actions: Missing localization node");
     return false;
   }
   localization = localization[0];
@@ -639,8 +702,7 @@ bool vtkOpenXRRenderWindowInteractor::LoadActions(const std::string& actionFilen
     {
       if (this->MapActionStruct_Name.count(name) == 0)
       {
-        ActionData* am = new ActionData();
-        this->MapActionStruct_Name[name] = am;
+        this->MapActionStruct_Name[name] = std::make_unique<vtkInternal::ActionData>();
       }
     }
 
@@ -649,14 +711,15 @@ bool vtkOpenXRRenderWindowInteractor::LoadActions(const std::string& actionFilen
     // Else do nothing
     if (this->MapActionStruct_Name.count(name) == 0)
     {
-      vtkWarningMacro(
+      vtkWarningWithObjectMacro(this->Interactor,
         << "An action with name " << name
         << " is available but the interactor style or the interactor does not use it.");
       continue;
     }
 
-    vtkDebugMacro(<< "Creating an action of type=" << type << ", with name=" << name
-                  << ", localizedName=" << localizedName);
+    vtkDebugWithObjectMacro(this->Interactor, << "Creating an action of type=" << type
+                                              << ", with name=" << name
+                                              << ", localizedName=" << localizedName);
 
     XrActionType xrActionType = this->GetActionTypeFromString(type);
     // `GetActionTypeFromString` casts `0` when it fails, so the variant in
@@ -668,9 +731,10 @@ bool vtkOpenXRRenderWindowInteractor::LoadActions(const std::string& actionFilen
     }
 
     // Create the action using the selected action set
-    Action_t actionStruct;
+    vtk::detail::vtkOpenXRManager::Action_t actionStruct;
     actionStruct.ActionType = xrActionType;
-    if (!vtkOpenXRManager::GetInstance().CreateOneAction(actionStruct, name, localizedName))
+    if (!vtk::detail::vtkOpenXRManager::GetInstance().CreateOneAction(
+          actionStruct, name, localizedName))
     {
       return false;
     }
@@ -683,7 +747,8 @@ bool vtkOpenXRRenderWindowInteractor::LoadActions(const std::string& actionFilen
   Json::Value defaultBindings = root["default_bindings"];
   if (defaultBindings.isNull())
   {
-    vtkErrorMacro(<< "Parse openxr_actions: Missing default_bindings node");
+    vtkErrorWithObjectMacro(
+      this->Interactor, << "Parse openxr_actions: Missing default_bindings node");
     return false;
   }
 
@@ -705,7 +770,8 @@ bool vtkOpenXRRenderWindowInteractor::LoadActions(const std::string& actionFilen
 }
 
 //------------------------------------------------------------------------------
-XrActionType vtkOpenXRRenderWindowInteractor::GetActionTypeFromString(const std::string& type)
+XrActionType vtkOpenXRRenderWindowInteractor::vtkInternal::GetActionTypeFromString(
+  const std::string& type)
 {
   if (type == "boolean")
   {
@@ -729,13 +795,14 @@ XrActionType vtkOpenXRRenderWindowInteractor::GetActionTypeFromString(const std:
   }
   else
   {
-    vtkErrorMacro(<< "Unrecognized action type: " << type);
+    vtkErrorWithObjectMacro(this->Interactor, << "Unrecognized action type: " << type);
     return (XrActionType)0;
   }
 }
 
 //------------------------------------------------------------------------------
-bool vtkOpenXRRenderWindowInteractor::LoadDefaultBinding(const std::string& bindingFilename)
+bool vtkOpenXRRenderWindowInteractor::vtkInternal::LoadDefaultBinding(
+  const std::string& bindingFilename)
 {
   Json::Value root;
   // Open the file
@@ -743,7 +810,8 @@ bool vtkOpenXRRenderWindowInteractor::LoadDefaultBinding(const std::string& bind
   file.open(bindingFilename.c_str());
   if (!file.is_open())
   {
-    vtkErrorMacro(<< "Unable to open openXR binding file : " << bindingFilename);
+    vtkErrorWithObjectMacro(
+      this->Interactor, << "Unable to open openXR binding file : " << bindingFilename);
     return false;
   }
 
@@ -753,7 +821,9 @@ bool vtkOpenXRRenderWindowInteractor::LoadDefaultBinding(const std::string& bind
   if (!Json::parseFromStream(builder, file, &root, &formattedErrors))
   {
     // Report failures and their locations in the document
-    vtkErrorMacro(<< "Failed to parse binding file with errors :" << endl << formattedErrors);
+    vtkErrorWithObjectMacro(
+      this->Interactor, << "Failed to parse binding file with errors :" << endl
+                        << formattedErrors);
     return false;
   }
 
@@ -762,11 +832,12 @@ bool vtkOpenXRRenderWindowInteractor::LoadDefaultBinding(const std::string& bind
 
   Json::Value bindings = root["bindings"];
 
-  const Json::Value& actionSet = bindings[this->ActionSetName];
+  const Json::Value& actionSet = bindings[this->Interactor->ActionSetName];
   if (actionSet.isNull())
   {
-    vtkErrorMacro(<< "Selected action set : " << this->ActionSetName
-                  << " is not in binding file : " << bindingFilename);
+    vtkErrorWithObjectMacro(
+      this->Interactor, << "Selected action set : " << this->Interactor->ActionSetName
+                        << " is not in binding file : " << bindingFilename);
     return false;
   }
 
@@ -788,7 +859,8 @@ bool vtkOpenXRRenderWindowInteractor::LoadDefaultBinding(const std::string& bind
     {
       return;
     }
-    vtkDebugMacro(<< "Add action : " << action << ", with path : " << path);
+    vtkDebugWithObjectMacro(
+      this->Interactor, << "Add action : " << action << ", with path : " << path);
     ActionData* actionData = this->GetActionDataFromName(action);
 
     if (actionData != nullptr)
@@ -811,15 +883,16 @@ bool vtkOpenXRRenderWindowInteractor::LoadDefaultBinding(const std::string& bind
         actionData->DeviceInput = vtkEventDataDeviceInput::Joystick;
       }
 
-      Action_t& actionT = actionData->ActionStruct;
+      auto& actionT = actionData->ActionStruct;
 
       if (actionT.Action == XR_NULL_HANDLE)
       {
-        vtkErrorMacro(<< "Action " << action << ", with path : " << path << " has a null handle !");
+        vtkErrorWithObjectMacro(this->Interactor,
+          << "Action " << action << ", with path : " << path << " has a null handle !");
         return;
       }
 
-      XrPath xrPath = vtkOpenXRManager::GetInstance().GetXrPath(path);
+      XrPath xrPath = vtk::detail::vtkOpenXRManager::GetInstance().GetXrPath(path);
       actionSuggestedBindings.push_back({ actionT.Action, xrPath });
     }
   };
@@ -866,22 +939,23 @@ bool vtkOpenXRRenderWindowInteractor::LoadDefaultBinding(const std::string& bind
   }
 
   // Submit all suggested bindings
-  return vtkOpenXRManager::GetInstance().SuggestActions(
+  return vtk::detail::vtkOpenXRManager::GetInstance().SuggestActions(
     interactionProfile, actionSuggestedBindings);
 }
 
 //------------------------------------------------------------------------------
-vtkOpenXRRenderWindowInteractor::ActionData* vtkOpenXRRenderWindowInteractor::GetActionDataFromName(
-  const std::string& actionName)
+vtkOpenXRRenderWindowInteractor::vtkInternal::ActionData*
+vtkOpenXRRenderWindowInteractor::vtkInternal::GetActionDataFromName(const std::string& actionName)
 {
   // Check if action data exists
   if (this->MapActionStruct_Name.count(actionName) == 0)
   {
-    vtkWarningMacro(<< "vtkOpenXRRenderWindowInteractor: Attempt to get an action data with name "
-                    << actionName << " that does not exist in the map.");
+    vtkWarningWithObjectMacro(this->Interactor,
+      << "vtkOpenXRRenderWindowInteractor: Attempt to get an action data with name " << actionName
+      << " that does not exist in the map.");
     return nullptr;
   }
-  return this->MapActionStruct_Name[actionName];
+  return this->MapActionStruct_Name[actionName].get();
 }
 
 //------------------------------------------------------------------------------
@@ -896,7 +970,7 @@ void vtkOpenXRRenderWindowInteractor::PrintSelf(ostream& os, vtkIndent indent)
 bool vtkOpenXRRenderWindowInteractor::ApplyVibration(const std::string& actionName, const int hand,
   const float amplitude, const float duration, const float frequency)
 {
-  ActionData* actionData = GetActionDataFromName(actionName);
+  vtkInternal::ActionData* actionData = this->Internal->GetActionDataFromName(actionName);
   if (actionData == nullptr)
   {
     vtkWarningMacro(
@@ -905,7 +979,7 @@ bool vtkOpenXRRenderWindowInteractor::ApplyVibration(const std::string& actionNa
     return false;
   }
 
-  return vtkOpenXRManager::GetInstance().ApplyVibration(
+  return vtk::detail::vtkOpenXRManager::GetInstance().ApplyVibration(
     actionData->ActionStruct, hand, amplitude, duration, frequency);
 }
 VTK_ABI_NAMESPACE_END

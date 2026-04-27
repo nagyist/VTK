@@ -6,7 +6,7 @@
 #include "vtkGlobFileNames.h"
 #include "vtkObjectFactory.h"
 #include "vtkOpenGLState.h"
-#include "vtkOpenXR.h"
+#include "vtkOpenXRDefinitions.h"
 #include "vtkOpenXRManager.h"
 #include "vtkOpenXRModel.h"
 #include "vtkOpenXRRenderWindowInteractor.h"
@@ -109,8 +109,9 @@ public:
       return;
     }
 
-    uint32_t leftHand = static_cast<uint32_t>(vtkOpenXRManager::ControllerIndex::Left);
-    uint32_t rightHand = static_cast<uint32_t>(vtkOpenXRManager::ControllerIndex::Right);
+    uint32_t leftHand = static_cast<uint32_t>(vtk::detail::vtkOpenXRManager::ControllerIndex::Left);
+    uint32_t rightHand =
+      static_cast<uint32_t>(vtk::detail::vtkOpenXRManager::ControllerIndex::Right);
 
     for (Json::Value::ArrayIndex i = 0; i < root.size(); ++i)
     {
@@ -191,7 +192,7 @@ vtkRenderWindowInteractor* vtkOpenXRRenderWindow::MakeRenderWindowInteractor()
 //------------------------------------------------------------------------------
 bool vtkOpenXRRenderWindow::GetSizeFromAPI()
 {
-  vtkOpenXRManager& xrManager = vtkOpenXRManager::GetInstance();
+  auto& xrManager = vtk::detail::vtkOpenXRManager::GetInstance();
 
   std::tie(this->Size[0], this->Size[1]) = xrManager.GetRecommendedImageRectSize();
 
@@ -234,7 +235,7 @@ void vtkOpenXRRenderWindow::Initialize()
   this->MakeCurrent();
   this->OpenGLInit();
 
-  vtkOpenXRManager& xrManager = vtkOpenXRManager::GetInstance();
+  auto& xrManager = vtk::detail::vtkOpenXRManager::GetInstance();
   if (!xrManager.Initialize(this))
   {
     // Set to false because the above init of the HelperWindow sets it to true
@@ -281,7 +282,7 @@ void vtkOpenXRRenderWindow::Finalize()
     this->HelperWindow->Finalize();
   }
 
-  vtkOpenXRManager::GetInstance().Finalize();
+  vtk::detail::vtkOpenXRManager::GetInstance().Finalize();
 
   this->ReleaseGraphicsResources(this);
 
@@ -291,7 +292,7 @@ void vtkOpenXRRenderWindow::Finalize()
 //------------------------------------------------------------------------------
 void vtkOpenXRRenderWindow::Render()
 {
-  vtkOpenXRManager& xrManager = vtkOpenXRManager::GetInstance();
+  auto& xrManager = vtk::detail::vtkOpenXRManager::GetInstance();
 
   if (!xrManager.WaitAndBeginFrame())
   {
@@ -317,14 +318,16 @@ void vtkOpenXRRenderWindow::Render()
 //------------------------------------------------------------------------------
 void vtkOpenXRRenderWindow::UpdateHMDMatrixPose()
 {
-  auto handle = this->GetDeviceHandleForOpenXRHandle(vtkOpenXRManager::ControllerIndex::Head);
-  auto device = this->GetDeviceForOpenXRHandle(vtkOpenXRManager::ControllerIndex::Head);
+  auto handle =
+    this->GetDeviceHandleForOpenXRHandle(vtk::detail::vtkOpenXRManager::ControllerIndex::Head);
+  auto device =
+    this->GetDeviceForOpenXRHandle(vtk::detail::vtkOpenXRManager::ControllerIndex::Head);
   this->AddDeviceHandle(handle, device);
 
   // use left eye as stand in for HMD right now
   // todo add event for head pose
 
-  const XrPosef* xrPose = vtkOpenXRManager::GetInstance().GetViewPose(LEFT_EYE);
+  const XrPosef* xrPose = vtk::detail::vtkOpenXRManager::GetInstance().GetViewPose(LEFT_EYE);
   if (xrPose == nullptr)
   {
     vtkErrorMacro(<< "No pose for left eye");
@@ -386,7 +389,7 @@ void vtkOpenXRRenderWindow::StereoRenderComplete()
 //------------------------------------------------------------------------------
 void vtkOpenXRRenderWindow::RenderOneEye(uint32_t eye)
 {
-  vtkOpenXRManager& xrManager = vtkOpenXRManager::GetInstance();
+  auto& xrManager = vtk::detail::vtkOpenXRManager::GetInstance();
 
   FramebufferDesc& eyeFramebufferDesc = this->FramebufferDescs[eye];
 
@@ -416,8 +419,8 @@ void vtkOpenXRRenderWindow::RenderModels()
   vtkOpenGLState* ostate = this->GetState();
   ostate->vtkglEnable(GL_DEPTH_TEST);
 
-  for (uint32_t hand :
-    { vtkOpenXRManager::ControllerIndex::Left, vtkOpenXRManager::ControllerIndex::Right })
+  for (uint32_t hand : { vtk::detail::vtkOpenXRManager::ControllerIndex::Left,
+         vtk::detail::vtkOpenXRManager::ControllerIndex::Right })
   {
     // Defer model loading until we have an interaction profile
     const std::string& currentProfile = this->GetCurrentInteractionProfile(hand);
@@ -466,7 +469,7 @@ bool vtkOpenXRRenderWindow::CreateFramebuffers(uint32_t vtkNotUsed(viewCount))
   // So we call glFrameBufferTexture2D at each frame with the texture provided by
   // the runtime
   // That's why we only generate framebuffers here
-  vtkOpenXRManager& xrManager = vtkOpenXRManager::GetInstance();
+  auto& xrManager = vtk::detail::vtkOpenXRManager::GetInstance();
   uint32_t viewCount = xrManager.GetViewCount();
   this->FramebufferDescs.resize(viewCount);
   for (size_t i = 0; i < viewCount; ++i)
@@ -486,7 +489,7 @@ bool vtkOpenXRRenderWindow::BindTextureToFramebuffer(FramebufferDesc& framebuffe
   glFramebufferTexture2D(
     GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferDesc.ResolveColorTextureId, 0);
 
-  if (vtkOpenXRManager::GetInstance().IsDepthExtensionSupported())
+  if (vtk::detail::vtkOpenXRManager::GetInstance().IsDepthExtensionSupported())
   {
     glFramebufferTexture2D(
       GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, framebufferDesc.ResolveDepthTextureId, 0);
@@ -517,7 +520,7 @@ void vtkOpenXRRenderWindow::RenderFramebuffer(FramebufferDesc& framebufferDesc)
   glBlitFramebuffer(0, 0, this->Size[0], this->Size[1], 0, 0, this->Size[0], this->Size[1],
     GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
-  if (vtkOpenXRManager::GetInstance().IsDepthExtensionSupported())
+  if (vtk::detail::vtkOpenXRManager::GetInstance().IsDepthExtensionSupported())
   {
     glBlitFramebuffer(0, 0, this->Size[0], this->Size[1], 0, 0, this->Size[0], this->Size[1],
       GL_DEPTH_BUFFER_BIT, GL_NEAREST);
@@ -534,15 +537,15 @@ uint32_t vtkOpenXRRenderWindow::GetDeviceHandleForOpenXRHandle(uint32_t index)
 
 vtkEventDataDevice vtkOpenXRRenderWindow::GetDeviceForOpenXRHandle(uint32_t ohandle)
 {
-  if (ohandle == vtkOpenXRManager::ControllerIndex::Left)
+  if (ohandle == vtk::detail::vtkOpenXRManager::ControllerIndex::Left)
   {
     return vtkEventDataDevice::LeftController;
   }
-  if (ohandle == vtkOpenXRManager::ControllerIndex::Right)
+  if (ohandle == vtk::detail::vtkOpenXRManager::ControllerIndex::Right)
   {
     return vtkEventDataDevice::RightController;
   }
-  if (ohandle == vtkOpenXRManager::ControllerIndex::Head)
+  if (ohandle == vtk::detail::vtkOpenXRManager::ControllerIndex::Head)
   {
     return vtkEventDataDevice::HeadMountedDisplay;
   }
@@ -582,6 +585,74 @@ void vtkOpenXRRenderWindow::SetModelsManifestDirectory(const std::string& path)
 vtkOpenXRSceneObserver* vtkOpenXRRenderWindow::GetSceneObserver()
 {
   return this->Internal->SceneObserver;
+}
+
+//------------------------------------------------------------------------------
+vtkOpenXRRenderWindow::InstanceVersion vtkOpenXRRenderWindow::QueryInstanceVersion(
+  vtkOpenXRManagerConnection* cs)
+{
+  if (vtk::detail::vtkOpenXRManager::GetInstance().GetXrRuntimeInstance() == XR_NULL_HANDLE)
+  {
+    vtkWarningWithObjectMacro(nullptr,
+      "Cannot call QueryInstanceVersion after a vtkOpenXRRenderWindow has been initialized.");
+    return {};
+  }
+
+  if (!cs->Initialize())
+  {
+    vtkWarningWithObjectMacro(nullptr, "Failed to initialize connection strategy.");
+    return {};
+  }
+
+  std::vector<const char*> enabledExtensions; // enable cs extension, if any
+  if (std::strlen(cs->GetExtensionName()) != 0)
+  {
+    enabledExtensions.emplace_back(cs->GetExtensionName());
+  }
+
+  // Create the instance with enabled extensions.
+  XrInstanceCreateInfo createInfo{ XR_TYPE_INSTANCE_CREATE_INFO };
+  createInfo.applicationInfo = XrApplicationInfo{
+    "OpenXR with VTK",    // .applicationName
+    1,                    // .applicationVersion
+    "",                   // .engineName
+    1,                    // .engineVersion
+#ifdef XR_API_VERSION_1_0 // available with OpenXR 1.1.37 or later:
+    XR_API_VERSION_1_0,   // .apiVersion
+#else                     // for 1.1.36 and earlier:
+    XR_MAKE_VERSION(1, 0, XR_VERSION_PATCH(XR_CURRENT_API_VERSION)), // .apiVersion
+#endif
+  };
+  createInfo.enabledExtensionCount = static_cast<uint32_t>(enabledExtensions.size());
+  createInfo.enabledExtensionNames = enabledExtensions.data();
+
+  XrInstance instance;
+  if (xrCreateInstance(&createInfo, &instance) != XR_SUCCESS)
+  {
+    vtkWarningWithObjectMacro(nullptr, "Failed to create instance for version query.");
+    return {};
+  }
+
+  XrInstanceProperties properties{ XR_TYPE_INSTANCE_PROPERTIES };
+  if (xrGetInstanceProperties(instance, &properties))
+  {
+    vtkWarningWithObjectMacro(nullptr, "Failed to get instance properties.");
+    return {};
+  }
+
+  InstanceVersion output;
+  output.Major = XR_VERSION_MAJOR(properties.runtimeVersion);
+  output.Minor = XR_VERSION_MINOR(properties.runtimeVersion);
+  output.Patch = XR_VERSION_PATCH(properties.runtimeVersion);
+
+  if (!cs->EndInitialize())
+  {
+    vtkWarningWithObjectMacro(nullptr, "Failed to terminate connection strategy initialization.");
+  }
+
+  xrDestroyInstance(instance);
+
+  return output;
 }
 
 VTK_ABI_NAMESPACE_END

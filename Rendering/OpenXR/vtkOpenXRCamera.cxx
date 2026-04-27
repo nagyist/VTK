@@ -5,7 +5,7 @@
 #include "vtkObjectFactory.h"
 #include "vtkOpenGLError.h"
 #include "vtkOpenGLState.h"
-#include "vtkOpenXR.h"
+#include "vtkOpenXRDefinitions.h"
 #include "vtkOpenXRRenderWindow.h"
 #include "vtkPerspectiveTransform.h"
 #include "vtkRenderer.h"
@@ -42,7 +42,7 @@ void vtkOpenXRCamera::UpdateWorldToEyeMatrices(vtkRenderer* ren)
   this->WorldToPhysicalMatrix->Invert();
   // at this point it is now correctly worldToPhysical
 
-  const XrPosef* xrPose = vtkOpenXRManager::GetInstance().GetViewPose(LEFT_EYE);
+  const XrPosef* xrPose = vtk::detail::vtkOpenXRManager::GetInstance().GetViewPose(LEFT_EYE);
   if (xrPose == nullptr)
   {
     vtkErrorMacro(<< "No pose for left eye, cannot update view transform");
@@ -54,7 +54,7 @@ void vtkOpenXRCamera::UpdateWorldToEyeMatrices(vtkRenderer* ren)
   vtkMatrix4x4::Multiply4x4(
     this->PhysicalToLeftEyeMatrix, this->WorldToPhysicalMatrix, this->WorldToLeftEyeMatrix);
 
-  xrPose = vtkOpenXRManager::GetInstance().GetViewPose(RIGHT_EYE);
+  xrPose = vtk::detail::vtkOpenXRManager::GetInstance().GetViewPose(RIGHT_EYE);
   if (xrPose == nullptr)
   {
     vtkErrorMacro(<< "No pose for right eye, cannot update view transform");
@@ -76,7 +76,7 @@ void vtkOpenXRCamera::UpdateEyeToProjectionMatrices(vtkRenderer* ren)
   double znear = this->ClippingRange[0] / scale;
   double zfar = this->ClippingRange[1] / scale;
 
-  XrFovf const* xrFov = vtkOpenXRManager::GetInstance().GetProjectionFov(LEFT_EYE);
+  XrFovf const* xrFov = vtk::detail::vtkOpenXRManager::GetInstance().GetProjectionFov(LEFT_EYE);
   if (xrFov == nullptr)
   {
     vtkErrorMacro(<< "No fov for left eye, cannot update projection matrix");
@@ -84,7 +84,7 @@ void vtkOpenXRCamera::UpdateEyeToProjectionMatrices(vtkRenderer* ren)
   }
   vtkOpenXRUtilities::CreateProjectionFov(this->LeftEyeToProjectionMatrix, *xrFov, znear, zfar);
 
-  xrFov = vtkOpenXRManager::GetInstance().GetProjectionFov(RIGHT_EYE);
+  xrFov = vtk::detail::vtkOpenXRManager::GetInstance().GetProjectionFov(RIGHT_EYE);
   if (xrFov == nullptr)
   {
     vtkErrorMacro(<< "No fov for right eye, cannot update projection matrix");

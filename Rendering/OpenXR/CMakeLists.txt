@@ -1,4 +1,4 @@
-vtk_module_find_package(PACKAGE OpenXR VERSION 1.0.31)
+vtk_module_find_package(PRIVATE_IF_SHARED PACKAGE OpenXR VERSION 1.0.31)
 
 set(classes
   vtkOpenXRRenderWindow
@@ -21,6 +21,7 @@ set(nowrap_classes
 
 set(nowrap_headers
   vtkOpenXR.h
+  vtkOpenXRDefinitions.h
   vtkOpenXRPlatform.h
   vtkOpenXRUtilities.h
   XrExtensions.h
@@ -34,7 +35,7 @@ vtk_module_add_module(VTK::RenderingOpenXR
   )
 
 vtk_module_link(VTK::RenderingOpenXR
-  PUBLIC
+  PRIVATE
     OpenXR::openxr_loader
     OpenXR::headers)
 

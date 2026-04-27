@@ -13,13 +13,11 @@
 #include "vtkRenderingOpenXRModule.h" // For export macro
 #include "vtkVRRenderWindowInteractor.h"
 
-#include "vtkEventData.h"     // for ivar
-#include "vtkOpenXRManager.h" //for types
+#include "vtkEventData.h" // for ivar
 
 #include <functional> // for std::function
 #include <map>        // for std::map
-
-typedef vtkOpenXRManager::Action_t Action_t;
+#include <memory>
 
 VTK_ABI_NAMESPACE_BEGIN
 class VTKRENDERINGOPENXR_EXPORT vtkOpenXRRenderWindowInteractor : public vtkVRRenderWindowInteractor
@@ -34,13 +32,6 @@ public:
   void Initialize() override;
 
   void DoOneEvent(vtkVRRenderWindow* renWin, vtkRenderer* ren) override;
-
-  /**
-   * Return the XrPosef for the action named "handpose"
-   * and the hand \p hand or return nullptr if "handpose"
-   * does not exist in the map.
-   */
-  XrPosef* GetHandPose(uint32_t hand);
 
   ///@{
   /**
@@ -65,19 +56,13 @@ public:
     const std::string& path, bool isAnalog, const std::function<void(vtkEventData*)>&) override;
   ///@}
 
-  void ConvertOpenXRPoseToWorldCoordinates(const XrPosef& xrPose,
-    double pos[3],   // Output world position
-    double wxyz[4],  // Output world orientation quaternion
-    double ppos[3],  // Output physical position
-    double wdir[3]); // Output world view direction (-Z)
-
   /**
    * Apply haptic vibration using the provided action
    * \p action to emit vibration on \p hand to emit on \p amplitude 0.0 to 1.0.
    * \p duration nanoseconds, default 25ms \p frequency (hz)
    */
   bool ApplyVibration(const std::string& actionName, int hand, float amplitude = 0.5,
-    float duration = 25000000.0, float frequency = XR_FREQUENCY_UNSPECIFIED);
+    float duration = 25000000.0, float frequency = 0.0);
 
 protected:
   /**
@@ -90,47 +75,8 @@ protected:
   ~vtkOpenXRRenderWindowInteractor() override;
   void PrintSelf(ostream& os, vtkIndent indent) override;
 
-  /**
-   * Process OpenXR specific events.
-   */
-  void ProcessXrEvents();
-
-  /**
-   * Update the action states using the OpenXRManager
-   * and handle all actions.
-   */
-  void PollXrActions();
-
-  struct ActionData;
-
-  XrActionType GetActionTypeFromString(const std::string& type);
-  bool LoadActions(const std::string& actionFilename);
-  bool LoadDefaultBinding(const std::string& bindingFilename);
-  ActionData* GetActionDataFromName(const std::string& actionName);
-
-  void HandleAction(const ActionData& actionData, int hand, vtkEventDataDevice3D* ed);
-  void HandleBooleanAction(const ActionData& actionData, int hand, vtkEventDataDevice3D* ed);
-  void HandlePoseAction(const ActionData& actionData, int hand, vtkEventDataDevice3D* ed);
-  void HandleVector2fAction(const ActionData& actionData, int hand, vtkEventDataDevice3D* ed);
-  void ApplyAction(const ActionData& actionData, vtkEventDataDevice3D* ed);
-
-  struct ActionData
-  {
-    std::string Name;
-
-    vtkEventDataDeviceInput DeviceInput = vtkEventDataDeviceInput::Unknown;
-
-    // This structure is defined in vtkOpenXRManager
-    // And hold OpenXR related data
-    Action_t ActionStruct{ XR_NULL_HANDLE };
-
-    vtkCommand::EventIds EventId;
-    std::function<void(vtkEventData*)> Function;
-    bool UseFunction = false;
-  };
-
-  using MapAction = std::map<std::string, ActionData*>;
-  MapAction MapActionStruct_Name;
+  class vtkInternal;
+  std::unique_ptr<vtkInternal> Internal;
 
   vtkNew<vtkMatrix4x4> PoseToWorldMatrix; // used in calculations
 

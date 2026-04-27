@@ -23,6 +23,7 @@ struct XrGraphicsBindingD3D11KHR;
 struct XrSwapchainImageD3D11KHR;
 
 VTK_ABI_NAMESPACE_BEGIN
+
 class VTKRENDERINGOPENXRREMOTING_EXPORT vtkOpenXRManagerD3DGraphics
   : public vtkOpenXRManagerGraphics
 {
@@ -72,12 +73,6 @@ public:
   const void* GetGraphicsBinding() override { return this->GraphicsBinding.get(); };
 
   /**
-   * Verify that the D3D feature levels supported by the runtime match the ones supported by
-   * vtkWin32OpenGLDXRenderWindow.
-   */
-  bool CheckGraphicsRequirements(XrInstance instance, XrSystemId id) override;
-
-  /**
    * Return the extension name corresponding to the D3D11 rendering backend
    */
   const char* GetBackendExtensionName() override;
@@ -100,6 +95,12 @@ protected:
   void EnumerateSwapchainImages(XrSwapchain swapchain, SwapchainImagesD3D& swapchainImages);
 
   std::shared_ptr<XrGraphicsBindingD3D11KHR> GraphicsBinding;
+
+  /**
+   * Verify that the D3D feature levels supported by the runtime match the ones supported by
+   * vtkWin32OpenGLDXRenderWindow.
+   */
+  bool CheckGraphicsRequirements(vtk::detail::vtkOpenXRManager& manager) override;
 
 private:
   vtkOpenXRManagerD3DGraphics(const vtkOpenXRManagerD3DGraphics&) = delete;

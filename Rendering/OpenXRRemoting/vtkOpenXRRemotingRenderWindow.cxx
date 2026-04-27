@@ -30,17 +30,17 @@ vtkOpenXRRemotingRenderWindow::vtkOpenXRRemotingRenderWindow()
 
   // Use a D3D rendering backend in OpenXR
   vtkNew<vtkOpenXRManagerD3DGraphics> D3Dgraphics;
-  vtkOpenXRManager::GetInstance().SetGraphicsStrategy(D3Dgraphics);
+  vtk::detail::vtkOpenXRManager::GetInstance().SetGraphicsStrategy(D3Dgraphics);
 
   // Use the OpenXR remoting connection strategy
   vtkNew<vtkOpenXRManagerRemoteConnection> remoteConnection;
-  vtkOpenXRManager::GetInstance().SetConnectionStrategy(remoteConnection);
+  vtk::detail::vtkOpenXRManager::GetInstance().SetConnectionStrategy(remoteConnection);
 }
 
 //------------------------------------------------------------------------------
 void vtkOpenXRRemotingRenderWindow::SetRemotingIPAddress(const char* host)
 {
-  vtkOpenXRManager::GetInstance().GetConnectionStrategy()->SetIPAddress(host);
+  vtk::detail::vtkOpenXRManager::GetInstance().GetConnectionStrategy()->SetIPAddress(host);
 }
 
 //------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ void vtkOpenXRRemotingRenderWindow::SetRemotingXRDirectory(const char* path)
 {
   vtkOpenXRManagerRemoteConnection* connectionStrategy =
     vtkOpenXRManagerRemoteConnection::SafeDownCast(
-      vtkOpenXRManager::GetInstance().GetConnectionStrategy());
+      vtk::detail::vtkOpenXRManager::GetInstance().GetConnectionStrategy());
 
   if (!connectionStrategy)
   {
@@ -70,7 +70,7 @@ void vtkOpenXRRemotingRenderWindow::Initialize()
   this->Superclass::Initialize();
 
   // Set the sample count to the value recommended by the runtime
-  uint32_t samples = vtkOpenXRManager::GetInstance().GetRecommendedSampleCount();
+  uint32_t samples = vtk::detail::vtkOpenXRManager::GetInstance().GetRecommendedSampleCount();
   this->HelperWindow->SetMultiSamples(samples);
 
   vtkOpenGLRenderWindow::CreateFramebuffers(this->Size[0], this->Size[1]);
@@ -137,7 +137,8 @@ void vtkOpenXRRemotingRenderWindow::RenderOneEye(uint32_t eye)
 {
   ID3D11Texture2D* colorTexture = nullptr;
   ID3D11Texture2D* depthTexture = nullptr;
-  if (!vtkOpenXRManager::GetInstance().PrepareRendering(this, &colorTexture, &depthTexture))
+  if (!vtk::detail::vtkOpenXRManager::GetInstance().PrepareRendering(
+        this, &colorTexture, &depthTexture))
   {
     return;
   }
@@ -150,6 +151,6 @@ void vtkOpenXRRemotingRenderWindow::RenderOneEye(uint32_t eye)
   helperWindow->Lock();
 
   // Release this swapchain image
-  vtkOpenXRManager::GetInstance().ReleaseSwapchainImage(eye);
+  vtk::detail::vtkOpenXRManager::GetInstance().ReleaseSwapchainImage(eye);
 }
 VTK_ABI_NAMESPACE_END

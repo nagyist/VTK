@@ -19,9 +19,14 @@
 #include "vtkObject.h"
 #include "vtkRenderingOpenXRModule.h" // For export macro
 
-#include "vtkOpenXR.h" // For XrEventDataBuffer
+namespace vtk::detail
+{
 VTK_ABI_NAMESPACE_BEGIN
+class vtkOpenXRManager;
+VTK_ABI_NAMESPACE_END
+}
 
+VTK_ABI_NAMESPACE_BEGIN
 class VTKRENDERINGOPENXR_EXPORT vtkOpenXRManagerConnection : public vtkObject
 {
 public:
@@ -38,20 +43,10 @@ public:
    */
   virtual bool EndInitialize() { return true; }
 
-  virtual bool ConnectToRemote(XrInstance vtkNotUsed(instance), XrSystemId vtkNotUsed(id))
-  {
-    return true;
-  }
-
   /**
    * Return the OpenXR extension name that corresponds to this connection strategy.
    */
   virtual const char* GetExtensionName() { return ""; }
-
-  /**
-   * Handle Xr events specific to this connection strategy
-   */
-  virtual bool HandleXrEvent(const XrEventDataBuffer& vtkNotUsed(eventData)) { return false; }
 
   ///@{
   /**
@@ -67,6 +62,10 @@ protected:
 
   // IP Address to connect to
   std::string IPAddress;
+
+  virtual bool ConnectToRemote(vtk::detail::vtkOpenXRManager& vtkNotUsed(manager)) { return true; }
+
+  friend class vtk::detail::vtkOpenXRManager; // for vtkOpenXRManager::Initialize
 
 private:
   vtkOpenXRManagerConnection(const vtkOpenXRManagerConnection&) = delete;
